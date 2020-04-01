@@ -3,7 +3,7 @@ Module related to Fourier spectrum of trace
 """
 
 
-import psutils
+from . import psutils
 import numpy as np
 from numpy.fft import rfft
 import matplotlib.pyplot as plt

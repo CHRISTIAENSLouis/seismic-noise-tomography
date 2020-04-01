@@ -5,13 +5,13 @@ processing, such as frequency-time analysis (FTAN) to measure
 dispersion curves.
 """
 
-import pserrors, psstation, psutils, pstomo
+from . import pserrors, psstation, psutils, pstomo
 import obspy.signal
-import obspy.xseed
+import obspy.io.xseed
 import obspy.signal.cross_correlation
 import obspy.signal.filter
 from obspy.core import AttribDict, read, UTCDateTime, Trace
-from obspy.signal.invsim import cosTaper
+from obspy.signal.invsim import cosine_taper
 import numpy as np
 from numpy.fft import rfft, irfft, fft, ifft, fftfreq
 from scipy import integrate
@@ -32,12 +32,16 @@ import matplotlib as mpl
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib import gridspec
 
+#Add by Louis
+from cycler import cycler
+
+
 plt.ioff()  # turning off interactive mode
 
 # ====================================================
 # parsing configuration file to import some parameters
 # ====================================================
-from psconfig import (
+from .psconfig import (
     CROSSCORR_DIR, FTAN_DIR, PERIOD_BANDS, CROSSCORR_TMAX, PERIOD_RESAMPLE,
     CROSSCORR_SKIPLOCS, MINFILL, FREQMIN, FREQMAX, CORNERS, ZEROPHASE,
     ONEBIT_NORM, FREQMIN_EARTHQUAKE, FREQMAX_EARTHQUAKE, WINDOW_TIME, WINDOW_FREQ,
@@ -239,7 +243,7 @@ class CrossCorrelation:
 
         # verifying that we don't have NaN
         if np.any(np.isnan(xcorr)):
-            s = u"Got NaN in cross-correlation between traces:\n{tr1}\n{tr2}"
+            s = "Got NaN in cross-correlation between traces:\n{tr1}\n{tr2}"
             raise pserrors.NaNError(s.format(tr1=tr1, tr2=tr2))
 
         # stacking cross-corr
@@ -277,7 +281,6 @@ class CrossCorrelation:
 
         @rtype: CrossCorrelation
         """
-
         if self.symmetrized:
             # already symmetrized
             return self
@@ -286,20 +289,22 @@ class CrossCorrelation:
         xcout = self if inplace else self.copy()
 
         n = len(xcout.timearray)
+      
         mid = (n - 1) / 2
-
+        #Added by Louis CHRISTIAENS, 20200228, list require int as 'itterator'. mid = (n-1)/2 gives a float even is n is uneven :) 
+        mid = int (mid)
         # verifying that time array is symmetric wrt 0
         if n % 2 != 1:
             raise Exception('Cross-correlation cannot be symmetrized')
         if not np.alltrue(xcout.timearray[mid:] + xcout.timearray[mid::-1] < EPS):
             raise Exception('Cross-correlation cannot be symmetrized')
-
         # calculating symmetric component of cross-correlation
         xcout.timearray = xcout.timearray[mid:]
+       
         for obj in [xcout] + (xcout.monthxcs if hasattr(xcout, 'monthxcs') else []):
             a = obj.dataarray
             obj.dataarray = (a[mid:] + a[mid::-1]) / 2.0
-
+        
         xcout.symmetrized = True
         return xcout
 
@@ -847,7 +852,7 @@ class CrossCorrelation:
             # with phi = phase of FTAN
             dt = xcout.timearray[it] - xcout.timearray[it-1]
             nT = phase.shape[0]
-            omega = np.abs((phase[range(nT), it] - phase[range(nT), it-1]) / dt)
+            omega = np.abs((phase[list(range(nT)), it] - phase[list(range(nT)), it-1]) / dt)
             # -> instantaneous period = 2.pi/omega
             inst_periods = 2.0 * np.pi / omega
             assert isinstance(inst_periods, np.ndarray)  # just to enable autocompletion
@@ -927,7 +932,7 @@ class CrossCorrelation:
                                                    right=np.nan)
 
             # list of (nominal period, inst period)
-            nom2inst_periods = zip(ftan_periods, inst_periods)
+            nom2inst_periods = list(zip(ftan_periods, inst_periods))
 
         vgcurve = pstomo.DispersionCurve(periods=ftan_periods,
                                          v=vgarray,
@@ -995,12 +1000,15 @@ class CrossCorrelation:
                  L{numpy.ndarray}, L{DispersionCurve})
         """
         # symmetrized, whitened cross-corr
+        
         xc = self.symmetrize(inplace=False)
+       
         if whiten:
             xc = xc.whiten(inplace=False)
 
         # raw FTAN (no need to whiten any more)
         rawvg_init = np.zeros_like(RAWFTAN_PERIODS)
+        
         try:
             rawampl, _, rawvg = xc.FTAN(whiten=False,
                                         months=months,
@@ -1009,9 +1017,10 @@ class CrossCorrelation:
                                         use_inst_freq=use_inst_freq,
                                         vg_at_nominal_freq=rawvg_init,
                                         **kwargs)
+            
         except pserrors.CannotCalculateInstFreq:
             # pb with instantaneous frequency: returnin NaNs
-            print "Warning: could not calculate instantenous frequencies in raw FTAN!"
+            print("Warning: could not calculate instantenous frequencies in raw FTAN!")
             rawampl = np.nan * np.zeros((len(RAWFTAN_PERIODS), len(FTAN_VELOCITIES)))
             cleanampl = np.nan * np.zeros((len(CLEANFTAN_PERIODS), len(FTAN_VELOCITIES)))
             rawvg = pstomo.DispersionCurve(periods=RAWFTAN_PERIODS,
@@ -1030,6 +1039,7 @@ class CrossCorrelation:
         # clean FTAN
         cleanvg_init = np.zeros_like(CLEANFTAN_PERIODS)
         try:
+            
             cleanampl, _, cleanvg = xc.FTAN(whiten=False,
                                             phase_corr=phase_corr,
                                             months=months,
@@ -1040,7 +1050,7 @@ class CrossCorrelation:
                                             **kwargs)
         except pserrors.CannotCalculateInstFreq:
             # pb with instantaneous frequency: returnin NaNs
-            print "Warning: could not calculate instantenous frequencies in clean FTAN!"
+            print("Warning: could not calculate instantenous frequencies in clean FTAN!")
             cleanampl = np.nan * np.zeros((len(CLEANFTAN_PERIODS), len(FTAN_VELOCITIES)))
             cleanvg = pstomo.DispersionCurve(periods=CLEANFTAN_PERIODS,
                                              v=np.nan * np.zeros(len(CLEANFTAN_PERIODS)),
@@ -1369,10 +1379,10 @@ class CrossCorrelation:
         if rawvg.nom2inst_periods or cleanvg.nom2inst_periods:
             ax = fig.add_subplot(gs5[0, 0])
             if rawvg.nom2inst_periods:
-                nomperiods, instperiods = zip(*rawvg.nom2inst_periods)
+                nomperiods, instperiods = list(zip(*rawvg.nom2inst_periods))
                 ax.plot(nomperiods, instperiods, '-', label='raw FTAN')
             if cleanvg.nom2inst_periods:
-                nomperiods, instperiods = zip(*cleanvg.nom2inst_periods)
+                nomperiods, instperiods = list(zip(*cleanvg.nom2inst_periods))
                 ax.plot(nomperiods, instperiods, '-', label='clean FTAN')
 
             ax.set_xlabel('Nominal period (s)')
@@ -1427,7 +1437,7 @@ class CrossCorrelation:
         else:
             nday = sum(monthxc.nday for monthxc in self.monthxcs
                        if monthxc.month in months)
-        title = u"{}-{}, dist={:.0f} km, ndays={}"
+        title = "{}-{}, dist={:.0f} km, ndays={}"
         title = title.format(self.station1.network + '.' + self.station1.name,
                              self.station2.network + '.' + self.station2.name,
                              self.dist(), nday)
@@ -1571,7 +1581,7 @@ class CrossCorrelationCollection(AttribDict):
         """
 
         if verbose:
-            print "Estimating spectral SNR of pair:",
+            print("Estimating spectral SNR of pair:", end=' ')
 
         # initial list of pairs
         pairs = pairs_subset if pairs_subset else self.pairs()
@@ -1580,7 +1590,7 @@ class CrossCorrelationCollection(AttribDict):
         SNRarraydict = {}
         for (s1, s2) in pairs:
             if verbose:
-                print '{0}-{1}'.format(s1, s2),
+                print('{0}-{1}'.format(s1, s2), end=' ')
 
             SNRarray = self[s1][s2].SNR(periodbands=PERIOD_BANDS, whiten=whiten,
                                         vmin=vmin, vmax=vmax,
@@ -1590,7 +1600,7 @@ class CrossCorrelationCollection(AttribDict):
                 SNRarraydict[(s1, s2)] = SNRarray
 
         if verbose:
-            print
+            print()
 
         return SNRarraydict
 
@@ -1616,7 +1626,7 @@ class CrossCorrelationCollection(AttribDict):
         stationtrace_pairs = it.combinations(sorted(tracedict.items()), 2)
         for (s1name, tr1), (s2name, tr2) in stationtrace_pairs:
             if verbose:
-                print "{s1}-{s2}".format(s1=s1name, s2=s2name),
+                print("{s1}-{s2}".format(s1=s1name, s2=s2name), end=' ')
 
             # checking that sampling rates are equal
             assert abs(tr1.stats.sampling_rate - tr2.stats.sampling_rate) < EPS
@@ -1646,10 +1656,10 @@ class CrossCorrelationCollection(AttribDict):
             except pserrors.NaNError:
                 # got NaN
                 s = "Warning: got NaN in cross-corr between {s1}-{s2} -> skipping"
-                print s.format(s1=s1name, s2=s2name)
+                print(s.format(s1=s1name, s2=s2name))
 
         if verbose:
-            print
+            print()
 
     def plot(self, plot_type='distance', xlim=None, norm=True, whiten=False,
              sym=False, minSNR=None, minday=1, withnets=None, onlywithnets=None,
@@ -1663,7 +1673,7 @@ class CrossCorrelationCollection(AttribDict):
                            onlywithnets=onlywithnets)
         npair = len(pairs)
         if not npair:
-            print "Nothing to plot!"
+            print("Nothing to plot!")
             return
 
         plt.figure()
@@ -1717,10 +1727,12 @@ class CrossCorrelationCollection(AttribDict):
         elif plot_type == 'distance':
             maxdist = max(self[x][y].dist() for (x, y) in pairs)
             corr2km = maxdist / 30.0
-            cc = mpl.rcParams['axes.color_cycle']  # color cycle
-
+            #Changed by Louis cc = mpl.rcParams['axes._cycle']  #color cycle
+            cc = cycler(mpl.rcParams['axes.prop_cycle'])  #color cycle
+            #ADD BY LOUIS
+            colors = [color['color'] for color in list(mpl.rcParams['axes.prop_cycle'])]
             # sorting pairs by distance
-            pairs.sort(key=lambda (s1, s2): self[s1][s2].dist())
+            pairs.sort(key=lambda s1_s2: self[s1_s2[0]][s1_s2[1]].dist())
             for ipair, (s1, s2) in enumerate(pairs):
                 # symmetrizing cross-corr if necessary
                 xcplot = self[s1][s2].symmetrize(inplace=False) if sym else self[s1][s2]
@@ -1730,8 +1742,11 @@ class CrossCorrelationCollection(AttribDict):
                     xcplot = xcplot.whiten(inplace=False)
 
                 # color
-                color = cc[ipair % len(cc)]
-
+                #color = cc[ipair % len(cc)]
+                
+                #CHANGEMENT LOUIS
+                color=colors[ipair % len(cc)]
+                
                 # normalizing factor
                 nrm = max(abs(xcplot.dataarray)) if norm else 1.0
 
@@ -1827,15 +1842,15 @@ class CrossCorrelationCollection(AttribDict):
 
         npair = len(SNRarrays)
         if not npair:
-            print 'Nothing to plot!!!'
+            print('Nothing to plot!!!')
             return
 
         # min-max SNR
-        minSNR = min([SNR for SNRarray in SNRarrays.values() for SNR in SNRarray])
-        maxSNR = max([SNR for SNRarray in SNRarrays.values() for SNR in SNRarray])
+        minSNR = min([SNR for SNRarray in list(SNRarrays.values()) for SNR in SNRarray])
+        maxSNR = max([SNR for SNRarray in list(SNRarrays.values()) for SNR in SNRarray])
 
         # sorting SNR arrays by increasing first value
-        SNRarrays = OrderedDict(sorted(SNRarrays.items(), key=lambda (k, v): v[0]))
+        SNRarrays = OrderedDict(sorted(list(SNRarrays.items()), key=lambda k_v: k_v[1][0]))
 
         # array of mid of time bands
         periodarray = [(tmin + tmax) / 2.0 for (tmin, tmax) in PERIOD_BANDS]
@@ -1876,7 +1891,7 @@ class CrossCorrelationCollection(AttribDict):
         plt.xlim((0.0, plt.xlim()[1]))
         plt.xlabel('Period (s)')
         plt.ylabel('SNR')
-        plt.title(u'{0} pairs'.format(npair))
+        plt.title('{0} pairs'.format(npair))
         plt.grid()
         plt.show()
 
@@ -1903,12 +1918,12 @@ class CrossCorrelationCollection(AttribDict):
             SNRarraydict = self.pairs_and_SNRarrays(
                 pairs_subset=pairs, minspectSNR=minspectSNR,
                 whiten=whiten, verbose=True, **SNRkwargs)
-            pairs = SNRarraydict.keys()
+            pairs = list(SNRarraydict.keys())
 
         # nb of pairs
         npair = len(pairs)
         if not npair:
-            print 'Nothing to plot!!!'
+            print('Nothing to plot!!!')
             return
 
         # initializing figure
@@ -1920,13 +1935,13 @@ class CrossCorrelationCollection(AttribDict):
 
         # plotting pairs
         for s1, s2 in pairs:
-            x, y = zip(self[s1][s2].station1.coord, self[s1][s2].station2.coord)
+            x, y = list(zip(self[s1][s2].station1.coord, self[s1][s2].station2.coord))
             if not plotkwargs:
                 plotkwargs = dict(color='grey', lw=0.5)
             plt.plot(x, y, '-', **plotkwargs)
 
         # plotting stations
-        x, y = zip(*[s.coord for s in self.stations(pairs)])
+        x, y = list(zip(*[s.coord for s in self.stations(pairs)]))
         plt.plot(x, y, '^', color='k', ms=10, mfc='w', mew=1)
         if stationlabel:
             # stations label
@@ -1935,7 +1950,7 @@ class CrossCorrelationCollection(AttribDict):
                          ha='center', va='bottom', fontsize=10, weight='bold')
 
         # setting axes
-        plt.title(u'{0} pairs'.format(npair))
+        plt.title('{0} pairs'.format(npair))
         plt.xlim(bbox[:2])
         plt.ylim(bbox[2:])
         plt.show()
@@ -2016,10 +2031,10 @@ class CrossCorrelationCollection(AttribDict):
             parts.append(suffix)
 
         # path of output files (without extension)
-        outputpath = u'_'.join(parts)
+        outputpath = '_'.join(parts)
 
         # opening pdf file
-        pdfpath = u'{}.pdf'.format(outputpath)
+        pdfpath = '{}.pdf'.format(outputpath)
         if os.path.exists(pdfpath):
             # backup
             shutil.copyfile(pdfpath, pdfpath + '~')
@@ -2042,15 +2057,18 @@ class CrossCorrelationCollection(AttribDict):
 
         s = ("Exporting FTANs of {0} pairs to file {1}.pdf\n"
              "and dispersion curves to file {1}.pickle\n")
-        print s.format(len(pairs), outputpath)
+        print(s.format(len(pairs), outputpath))
 
         cleanvgcurves = []
-        print "Appending FTAN of pair:",
+        print("Appending FTAN of pair:", end=' ')
         for i, (s1, s2) in enumerate(pairs):
             # appending FTAN plot of pair s1-s2 to pdf
-            print "[{}] {}-{}".format(i + 1, s1, s2),
+            print("[{}] {}-{}".format(i + 1, s1, s2), end=' ')
+            
             xc = self[s1][s2]
+       
             assert isinstance(xc, CrossCorrelation)
+            
 
             try:
                 # complete FTAN analysis
@@ -2060,7 +2078,6 @@ class CrossCorrelationCollection(AttribDict):
                     signal2noise_trail=signal2noise_trail,
                     noise_window_size=noise_window_size,
                     **kwargs)
-
                 # plotting raw-clean FTAN
                 fig = xc.plot_FTAN(rawampl, rawvg, cleanampl, cleanvg,
                                    whiten=whiten,
@@ -2073,15 +2090,14 @@ class CrossCorrelationCollection(AttribDict):
                                    **kwargs)
                 pdf.savefig(fig)
                 plt.close()
-
                 # appending clean vg curve
                 cleanvgcurves.append(cleanvg)
 
             except Exception as err:
                 # something went wrong with this FTAN
-                print "\nGot unexpected error:\n\n{}\n\nSKIPPING PAIR!".format(err)
+                print("\nGot unexpected error:\n\n{}\n\nSKIPPING PAIR!".format(err))
 
-        print "\nSaving files..."
+        print("\nSaving files...")
 
         # closing pdf
         pdf.close()
@@ -2119,7 +2135,7 @@ class CrossCorrelationCollection(AttribDict):
         """
         if verbose:
             s = "Exporting cross-correlations in binary format to file: {}.pickle"
-            print s.format(outprefix)
+            print(s.format(outprefix))
 
         f = psutils.openandbackup(outprefix + '.pickle', mode='wb')
         pickle.dump(self, f, protocol=2)
@@ -2133,7 +2149,7 @@ class CrossCorrelationCollection(AttribDict):
         """
         if verbose:
             s = "Exporting cross-correlations in ascci format to file: {}.txt"
-            print s.format(outprefix)
+            print(s.format(outprefix))
 
         # writing data file: time array (1st column)
         # and cross-corr array (one column per pair)
@@ -2145,7 +2161,7 @@ class CrossCorrelationCollection(AttribDict):
         f.write('\t'.join(header) + '\n')
 
         # writing line = ith [time, cross-corr 1st pair, cross-corr 2nd pair etc]
-        data = zip(self._get_timearray(), *[self[s1][s2].dataarray for s1, s2 in pairs])
+        data = list(zip(self._get_timearray(), *[self[s1][s2].dataarray for s1, s2 in pairs]))
         for fields in data:
             line = [str(fld) for fld in fields]
             f.write('\t'.join(line) + '\n')
@@ -2159,7 +2175,7 @@ class CrossCorrelationCollection(AttribDict):
         """
         if verbose:
             s = "Exporting pairs information to file: {}.stats.txt"
-            print s.format(outprefix)
+            print(s.format(outprefix))
 
         # writing file: coord, locations, ids etc. for each pair
         pairs = self.pairs(sort=True)
@@ -2202,7 +2218,7 @@ class CrossCorrelationCollection(AttribDict):
         """
         if verbose:
             s = "Exporting stations information to file: {}.stations.txt"
-            print s.format(outprefix)
+            print(s.format(outprefix))
 
         if not stations:
             # extracting the list of stations from cross-correlations
@@ -2302,6 +2318,9 @@ def get_merged_trace(station, date, skiplocs=CROSSCORR_SKIPLOCS, minfill=MINFILL
 
     # Data fill for current date
     fill = psutils.get_fill(st, starttime=t0, endtime=t0 + dt.timedelta(days=1))
+    
+    # TODO: Remove the following line
+    # print(st, t0, fill, minfill)
     if fill < minfill:
         # not enough data
         raise pserrors.CannotPreprocess("{:.0f}% fill".format(fill * 100))
@@ -2484,7 +2503,7 @@ def preprocess_trace(trace, paz=None, freqmin=FREQMIN, freqmax=FREQMAX,
         if np.ma.isMA(trcopy.data):
             # turning time-normalization weights into a masked array
             s = "[warning: {}.{} trace's data is a masked array]"
-            print s.format(trace.stats.network, trace.stats.station),
+            print(s.format(trace.stats.network, trace.stats.station), end=' ')
             tnorm_w = np.ma.masked_array(tnorm_w, trcopy.data.mask)
 
         if np.any((tnorm_w == 0.0) | np.isnan(tnorm_w)):
@@ -2523,7 +2542,7 @@ def load_pickled_xcorr(pickle_file):
     @type pickle_file: str or unicode
     @rtype: L{CrossCorrelationCollection}
     """
-    f = open(name=pickle_file, mode='rb')
+    f = open(pickle_file, mode='rb')
     xc = pickle.load(f)
     f.close()
     return xc
@@ -2547,12 +2566,12 @@ def load_pickled_xcorr_interactive(xcorr_dir=CROSSCORR_DIR, xcorr_files='xcorr*.
     pickle_file = None
     if len(flist) == 1:
         pickle_file = flist[0]
-        print 'Reading cross-correlation from file ' + pickle_file
+        print('Reading cross-correlation from file ' + pickle_file)
     elif len(flist) > 0:
-        print 'Select file containing cross-correlations:'
-        print '\n'.join('{i} - {f}'.format(i=i, f=os.path.basename(f))
-                        for (i, f) in enumerate(flist))
-        i = int(raw_input('\n'))
+        print('Select file containing cross-correlations:')
+        print('\n'.join('{i} - {f}'.format(i=i, f=os.path.basename(f))
+                        for (i, f) in enumerate(flist)))
+        i = int(input('\n'))
         pickle_file = flist[i]
 
     # loading cross-correlations
@@ -2625,7 +2644,7 @@ def FTAN(x, dt, periods, alpha, phase_corr=None):
         Xa[mask] = np.abs(Xa[mask]) * np.exp(-1j * phi)
 
         # tapering
-        taper = cosTaper(npts=mask.sum(), p=0.05)
+        taper = cosine_taper(npts=mask.sum(), p=0.05)
         Xa[mask] *= taper
         Xa[~mask] = 0.0
 
@@ -2712,7 +2731,7 @@ def extract_dispcurve(amplmatrix, velocities, periodmask=None, varray_init=None,
             # we select the (v, ampl) curve for which the jump wrt previous
             # v (not nan) is minimum
             lastv = lambda varray: varray[:iperiod][~np.isnan(varray[:iperiod])][-1]
-            vjump = lambda (varray, amplarray): abs(lastv(varray) - v)
+            vjump = lambda varray_amplarray: abs(lastv(varray_amplarray[0]) - v)
             varray, amplarray = min(v_ampl_arrays, key=vjump)
 
             # if the curve already has a vel attributed at this period, we
@@ -2739,7 +2758,8 @@ def extract_dispcurve(amplmatrix, velocities, periodmask=None, varray_init=None,
 
     # amongst possible vg curves, we select the one that maximizes amplitude,
     # while preserving some smoothness
-    def funcmin((varray, amplarray)):
+    def funcmin(xxx_todo_changeme):
+        (varray, amplarray) = xxx_todo_changeme
         if not periodmask is None:
             return dispcurve_penaltyfunc(varray[periodmask],
                                          amplarray[periodmask],
@@ -2857,5 +2877,5 @@ def dispcurve_penaltyfunc(vgarray, amplarray, strength_smoothing=STRENGTH_SMOOTH
 if __name__ == '__main__':
     # loading pickled cross-correlations
     xc = load_pickled_xcorr_interactive()
-    print "Cross-correlations available in variable 'xc':"
-    print xc
+    print("Cross-correlations available in variable 'xc':")
+    print(xc)

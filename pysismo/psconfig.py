@@ -4,14 +4,14 @@ file at first import, to make them available to the other
 parts of the program.
 """
 
-import ConfigParser
+import configparser
 import os
 import glob
 import json
 import datetime as dt
 import numpy as np
 
-
+###Inutile pour le moment car "forcé" directement, pas de recourt au fichier .cnf
 def select_and_parse_config_file(basedir='.', ext='cnf', verbose=True):
     """
     Reads a configuration file and returns an instance of ConfigParser:
@@ -22,7 +22,7 @@ def select_and_parse_config_file(basedir='.', ext='cnf', verbose=True):
 
     @rtype: L{ConfigParser.ConfigParser}
     """
-    config_files = glob.glob(os.path.join(basedir, u'*.{}'.format(ext)))
+    config_files = glob.glob(os.path.join(basedir, '*.{}'.format(ext)))
 
     if not config_files:
         raise Exception("No configuration file found!")
@@ -31,16 +31,16 @@ def select_and_parse_config_file(basedir='.', ext='cnf', verbose=True):
         # only one configuration file
         config_file = config_files[0]
     else:
-        print "Select a configuration file:"
+        print("Select a configuration file:")
         for i, f in enumerate(config_files, start=1):
-            print "{} - {}".format(i, f)
-        res = int(raw_input(''))
+            print("{} - {}".format(i, f))
+        res = int(input(''))
         config_file = config_files[res - 1]
 
     if verbose:
-        print "Reading configuration file: {}".format(config_file)
+        print("Reading configuration file: {}".format(config_file))
 
-    conf = ConfigParser.ConfigParser(allow_no_value=True)
+    conf = configparser.ConfigParser(allow_no_value=True)
     conf.read(config_file)
 
     return conf
@@ -59,6 +59,7 @@ config = select_and_parse_config_file(basedir='.', ext='cnf', verbose=True)
 MSEED_DIR = config.get('paths', 'MSEED_DIR')
 STATIONXML_DIR = config.get('paths', 'STATIONXML_DIR')
 DATALESS_DIR = config.get('paths', 'DATALESS_DIR')
+
 
 # output dirs
 CROSSCORR_DIR = config.get('paths', 'CROSSCORR_DIR')
@@ -95,8 +96,7 @@ USE_DATALESSPAZ = config.getboolean('cross-correlation', 'USE_DATALESSPAZ')
 USE_STATIONXML = config.getboolean('cross-correlation', 'USE_STATIONXML')
 
 # subset of stations to cross-correlate
-CROSSCORR_STATIONS_SUBSET = config.get('cross-correlation', 'CROSSCORR_STATIONS_SUBSET')
-CROSSCORR_STATIONS_SUBSET = json.loads(CROSSCORR_STATIONS_SUBSET)
+CROSSCORR_STATIONS_SUBSET = json.loads(config.get('cross-correlation', 'CROSSCORR_STATIONS_SUBSET'))
 
 # locations to skip
 CROSSCORR_SKIPLOCS = json.loads(config.get('cross-correlation', 'CROSSCORR_SKIPLOCS'))
@@ -146,6 +146,8 @@ CROSSCORR_TMAX = config.getfloat('cross-correlation', 'CROSSCORR_TMAX')
 # - plot spectral SNR, in plot_spectral_SNR()
 # - estimate min spectral SNR, in FTANs()
 PERIOD_BANDS = json.loads(config.get('FTAN', 'PERIOD_BANDS'))
+# (these bands focus on periods ~5, 10, 15, 20, 25 seconds)#Twho first focus added by Louis Ch.
+
 
 # default parameters to define the signal and noise windows used to
 # estimate the SNR:
@@ -167,7 +169,7 @@ RAWFTAN_PERIODS_STARTSTOPSTEP = config.get('FTAN', 'RAWFTAN_PERIODS_STARTSTOPSTE
 RAWFTAN_PERIODS_STARTSTOPSTEP = json.loads(RAWFTAN_PERIODS_STARTSTOPSTEP)
 RAWFTAN_PERIODS = np.arange(*RAWFTAN_PERIODS_STARTSTOPSTEP)
 
-CLEANFTAN_PERIODS_STARTSTOPSTEP = config.get('FTAN', 'CLEANFTAN_PERIODS_STARTSTOPSTEP')
+CLEANFTAN_PERIODS_STARTSTOPSTEP = config.get('FTAN', 'CLEANFTAN_PERIODS_STARTSTOPSTEP') 
 CLEANFTAN_PERIODS_STARTSTOPSTEP = json.loads(CLEANFTAN_PERIODS_STARTSTOPSTEP)
 CLEANFTAN_PERIODS = np.arange(*CLEANFTAN_PERIODS_STARTSTOPSTEP)
 

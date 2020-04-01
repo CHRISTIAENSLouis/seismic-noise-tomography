@@ -3,7 +3,7 @@ Definition of classes handling dispersion curves and
 velocity maps (obtained by inverting dispersion curves)
 """
 
-import pserrors, psutils
+from . import pserrors, psutils
 import itertools as it
 import numpy as np
 from scipy.optimize import curve_fit
@@ -24,7 +24,7 @@ from inspect import getargspec
 # ====================================================
 # parsing configuration file to import some parameters
 # ====================================================
-from psconfig import (
+from .psconfig import (
     SIGNAL_WINDOW_VMIN, SIGNAL_WINDOW_VMAX, SIGNAL2NOISE_TRAIL, NOISE_WINDOW_SIZE,
     MINSPECTSNR, MINSPECTSNR_NOSDEV, MAXSDEV, MINNBTRIMESTER, MAXPERIOD_FACTOR,
     LONSTEP, LATSTEP, CORRELATION_LENGTH, ALPHA, BETA, LAMBDA,
@@ -44,7 +44,7 @@ colors = ['black', 'red', 'gold', 'white',
 values = [-1.0, -0.35, -0.1, -0.025,
           0.025, 0.1, 0.35, 1.0]
 rgblist = [c.to_rgb(s) for s in colors]
-reds, greens, blues = zip(*rgblist)
+reds, greens, blues = list(zip(*rgblist))
 cdict = {}
 for x, r, g, b in zip(values, reds, greens, blues):
     v = (x - min(values)) / (max(values) - min(values))
@@ -58,7 +58,7 @@ CMAP_SEISMIC = LinearSegmentedColormap('customseismic', cdict)
 colors = ['black', 'red', 'yellow', 'green', 'white']
 values = [0, 0.25, 0.5, 0.75,  1.0]
 rgblist = [c.to_rgb(s) for s in colors]
-reds, greens, blues = zip(*rgblist)
+reds, greens, blues = list(zip(*rgblist))
 cdict = {}
 for x, r, g, b in zip(values, reds, greens, blues):
     v = (x - min(values)) / (max(values) - min(values))
@@ -73,7 +73,7 @@ CMAP_RESOLUTION.set_bad(color='0.85')
 colors = ['white', 'cyan', 'green', 'yellow', 'red', 'black']
 values = [0, 0.05, 0.1, 0.25, 0.5,  1.0]
 rgblist = [c.to_rgb(s) for s in colors]
-reds, greens, blues = zip(*rgblist)
+reds, greens, blues = list(zip(*rgblist))
 cdict = {}
 for x, r, g, b in zip(values, reds, greens, blues):
     v = (x - min(values)) / (max(values) - min(values))
@@ -206,7 +206,7 @@ class DispersionCurve:
 
         @type xc: L{CrossCorrelation}
         """
-        centerperiods_and_alpha = zip(self.periods, [filter_alpha] * len(self.periods))
+        centerperiods_and_alpha = list(zip(self.periods, [filter_alpha] * len(self.periods)))
         SNRs = xc.SNR(centerperiods_and_alpha=centerperiods_and_alpha,
                       months=months, vmin=vmin, vmax=vmax,
                       signal2noise_trail=signal2noise_trail,
@@ -215,7 +215,7 @@ class DispersionCurve:
         if self.nom2inst_periods:
             # if a list of (nominal period, inst period) is provided
             # we use it to re-interpolate SNRs
-            inst_period_func = interp1d(*zip(*self.nom2inst_periods))
+            inst_period_func = interp1d(*list(zip(*self.nom2inst_periods)))
             SNRs = np.interp(x=self.periods,
                              xp=inst_period_func(self.periods),
                              fp=SNRs,
@@ -332,7 +332,7 @@ class DispersionCurve:
         dist = self.station1.dist(self.station2)
         periodmask = self.periods <= self.maxperiodfactor * dist
         varrays = []
-        for trimester_start, vels in self.v_trimesters.items():
+        for trimester_start, vels in list(self.v_trimesters.items()):
             SNRs = self._SNRs_trimesters.get(trimester_start)
             if SNRs is None:
                 raise Exception("Spectral SNRs not defined")
@@ -489,7 +489,7 @@ class Grid:
         such that i is the index of node (ix, iy)
         """
         b = np.zeros((self.nx, self.ny))
-        ix, iy = self.ix_iy(range(self.n_nodes()))
+        ix, iy = self.ix_iy(list(range(self.n_nodes())))
         b[ix, iy] = np.array(a).flatten()
         return b
 
@@ -658,21 +658,21 @@ class VelocityMap:
         lambda_ = kwargs.get('lambda_', LAMBDA)
 
         if verbose:
-            print "Velocities selection criteria:"
-            print "- rejecting velocities if SNR < {}".format(minspectSNR)
+            print("Velocities selection criteria:")
+            print("- rejecting velocities if SNR < {}".format(minspectSNR))
             s = "- rejecting velocities without std dev if SNR < {}"
-            print s.format(minspectSNR_nosdev)
+            print(s.format(minspectSNR_nosdev))
             s = "- estimating standard dev of velocities with more than {} trimesters"
-            print s.format(minnbtrimester)
-            print "- rejecting velocities with standard dev > {} km/s".format(maxsdev)
-            print "\nTomographic inversion parameters:"
-            print "- {} x {} deg grid".format(lonstep, latstep)
+            print(s.format(minnbtrimester))
+            print("- rejecting velocities with standard dev > {} km/s".format(maxsdev))
+            print("\nTomographic inversion parameters:")
+            print("- {} x {} deg grid".format(lonstep, latstep))
             s = "- correlation length of the smoothing kernel: {} km"
-            print s.format(correlation_length)
-            print "- strength of the spatial smoothing term: {}".format(alpha)
-            print "- strength of the norm penalization term: {}".format(beta)
-            print "- weighting norm by exp(- {} * path_density)".format(lambda_)
-            print
+            print(s.format(correlation_length))
+            print("- strength of the spatial smoothing term: {}".format(alpha))
+            print("- strength of the norm penalization term: {}".format(beta))
+            print("- weighting norm by exp(- {} * path_density)".format(lambda_))
+            print()
 
         # skipping stations and pairs
         if skipstations:
@@ -703,8 +703,8 @@ class VelocityMap:
         dists = np.array([c.dist() for c in self.disp_curves])
 
         # getting (non nan) velocities and std devs at period
-        vels, sigmav, _ = zip(*[c.filtered_vel_sdev_SNR(self.period)
-                                for c in self.disp_curves])
+        vels, sigmav, _ = list(zip(*[c.filtered_vel_sdev_SNR(self.period)
+                                for c in self.disp_curves]))
         vels = np.array(vels)
         sigmav = np.array(sigmav)
         sigmav_isnan = np.isnan(sigmav)
@@ -740,7 +740,7 @@ class VelocityMap:
         # = vector of differences observed-reference travel time
         # ======================================================
         if verbose:
-            print 'Setting up reference velocity (v0) and data vector (dobs)'
+            print('Setting up reference velocity (v0) and data vector (dobs)')
 
         # reference velocity = inverse of mean slowness
         # mean slowness = slowness implied by observed travel-times
@@ -753,15 +753,15 @@ class VelocityMap:
 
         # inverse of covariance matrix of the data
         if verbose:
-            print 'Setting up covariance matrix (C)'
+            print('Setting up covariance matrix (C)')
         sigmad = sigmav * dists / vels**2
         self.Cinv = np.matrix(np.zeros((len(sigmav), len(sigmav))))
         np.fill_diagonal(self.Cinv, 1.0 / sigmad**2)
 
         # spatial grid for tomographic inversion (slightly enlarged to be
         # sure that no path will fall outside)
-        lons1, lats1 = zip(*[c.station1.coord for c in self.disp_curves])
-        lons2, lats2 = zip(*[c.station2.coord for c in self.disp_curves])
+        lons1, lats1 = list(zip(*[c.station1.coord for c in self.disp_curves]))
+        lons2, lats2 = list(zip(*[c.station2.coord for c in self.disp_curves]))
         tol = 0.5
         lonmin = np.floor(min(lons1 + lons2) - tol)
         nlon = np.ceil((max(lons1 + lons2) + tol - lonmin) / lonstep) + 1
@@ -771,7 +771,7 @@ class VelocityMap:
 
         # geodesic paths associated with pairs of stations of dispersion curves
         if verbose:
-            print 'Calculating interstation paths'
+            print('Calculating interstation paths')
         self.paths = []
         for curve, dist in zip(self.disp_curves, dists):
             # interpoint distance <= 1 km, and nb of points >= 100
@@ -787,7 +787,7 @@ class VelocityMap:
         # ================================================
         G = np.zeros((len(self.paths), self.grid.n_nodes()))
         if verbose:
-            print 'Setting up {} x {} forward matrix (G)'.format(*G.shape)
+            print('Setting up {} x {} forward matrix (G)'.format(*G.shape))
         for ipath, path in enumerate(self.paths):
 
             # for each point M along the path (1) we determine the Delaunay
@@ -819,9 +819,9 @@ class VelocityMap:
             # w[j, :] = w_j(r) = weights of node j along path
             nM = path.shape[0]
             w = np.zeros((self.grid.n_nodes(), nM))
-            w[iA, range(nM)] = wA
-            w[iB, range(nM)] = wB
-            w[iC, range(nM)] = wC
+            w[iA, list(range(nM))] = wA
+            w[iB, list(range(nM))] = wB
+            w[iC, list(range(nM))] = wC
 
             # ds = array of infinitesimal distances along path
             ds = psutils.dist(lons1=lon_M[:-1], lats1=lat_M[:-1],
@@ -834,7 +834,7 @@ class VelocityMap:
 
         # path densities around grid's nodes
         if verbose:
-            print "Calculating path densities"
+            print("Calculating path densities")
         self.density = self.path_density()
 
         # =====================================================================
@@ -854,7 +854,7 @@ class VelocityMap:
         dists = np.zeros((self.grid.n_nodes(), self.grid.n_nodes()))
 
         if verbose:
-            print "Setting up {} x {} regularization matrix (Q)".format(*dists.shape)
+            print("Setting up {} x {} regularization matrix (Q)".format(*dists.shape))
 
         # indices of the upper right triangle of distance matrix
         # = (array of index #1, array of index #2)
@@ -894,20 +894,20 @@ class VelocityMap:
 
         # covariance matrix and inversion operator
         if verbose:
-            print "Setting up covariance matrix of best-fitting params (covmopt)"
+            print("Setting up covariance matrix of best-fitting params (covmopt)")
         self.covmopt = (self.G.T * self.Cinv * self.G + self.Q).I
         if verbose:
-            print "Setting up inversion operator (Ginv)"
+            print("Setting up inversion operator (Ginv)")
         self.Ginv = self.covmopt * self.G.T
 
         # vector of best-fitting parameters
         if verbose:
-            print "Estimating best-fitting parameters (mopt)"
+            print("Estimating best-fitting parameters (mopt)")
         self.mopt = self.Ginv * self.Cinv * self.dobs
 
         # resolution matrix
         if verbose:
-            print "Setting up {0} x {0} resolution matrix (R)".format(self.G.shape[1])
+            print("Setting up {0} x {0} resolution matrix (R)".format(self.G.shape[1]))
         self.R = self.Ginv * self.Cinv * self.G
 
         # ===========================================================
@@ -925,7 +925,7 @@ class VelocityMap:
         # ===========================================================
 
         if verbose:
-            print "Estimation spatial resolution (Rradius)"
+            print("Estimation spatial resolution (Rradius)")
 
         self.Rradius = np.zeros(self.grid.n_nodes())
         heights = np.zeros(self.grid.n_nodes())
@@ -1219,7 +1219,7 @@ class VelocityMap:
         # fig title
         if not title:
             # default title if not given
-            title = u'Period = {} s, {} paths'
+            title = 'Period = {} s, {} paths'
             title = title.format(self.period, len(self.paths))
         fig.suptitle(title, fontsize=16)
 
@@ -1283,7 +1283,7 @@ class VelocityMap:
 
             # plotting paths
             for i, path in enumerate(self.paths):
-                x, y = zip(*path)
+                x, y = list(zip(*path))
                 linestyle = {'color': 'grey', 'lw': 0.5}
                 if highlight_residuals_gt and abs(float(res[i])) > highlight_residuals_gt:
                     # highlighting line as the travel-time error is > threshold
@@ -1302,7 +1302,7 @@ class VelocityMap:
         ax.set_xlim(bbox[:2])
         ax.set_ylim(bbox[2:])
         if plot_title:
-            ax.set_title(u'Period = {} s, {} paths'.format(self.period, len(self.paths)))
+            ax.set_title('Period = {} s, {} paths'.format(self.period, len(self.paths)))
 
         if fig:
             fig.show()
@@ -1358,7 +1358,7 @@ class VelocityMap:
         ax.set_xlim(bbox[:2])
         ax.set_ylim(bbox[2:])
         if plot_title:
-            ax.set_title(u'Period = {} s, {} paths'.format(self.period, len(self.paths)))
+            ax.set_title('Period = {} s, {} paths'.format(self.period, len(self.paths)))
 
         if fig:
             fig.show()
@@ -1398,7 +1398,7 @@ class VelocityMap:
         ax.set_xlim(bbox[:2])
         ax.set_ylim(bbox[2:])
         if plot_title:
-            ax.set_title(u'Period = {} s, {} paths'.format(self.period, len(self.paths)))
+            ax.set_title('Period = {} s, {} paths'.format(self.period, len(self.paths)))
 
         if fig:
             fig.show()
@@ -1475,7 +1475,7 @@ class VelocityMap:
         # plotting stations
         xylabels = [c.station1.coord + (c.station1.name,) for c in self.disp_curves] + \
                    [c.station2.coord + (c.station2.name,) for c in self.disp_curves]
-        xlist, ylist, labels = zip(*list(set(xylabels)))
+        xlist, ylist, labels = list(zip(*list(set(xylabels))))
         ax.plot(xlist, ylist, '^', color='k', ms=10, mfc='w', mew=1)
 
         if not stationlabel:
@@ -1507,14 +1507,14 @@ def pathdensity_colormap(dmax):
 
 if __name__ == '__main__':
     # importig dir of FTAN results
-    from psconfig import FTAN_DIR
+    from .psconfig import FTAN_DIR
 
     # loading dispersion curves
     flist = sorted(glob.glob(os.path.join(FTAN_DIR, 'FTAN*.pickle*')))
-    print 'Select file containing dispersion curves:'
-    print '\n'.join('{} - {}'.format(i, os.path.basename(f)) for i, f in enumerate(flist))
-    pickle_file = flist[int(raw_input('\n'))]
+    print('Select file containing dispersion curves:')
+    print('\n'.join('{} - {}'.format(i, os.path.basename(f)) for i, f in enumerate(flist)))
+    pickle_file = flist[int(input('\n'))]
     f = open(pickle_file, 'rb')
     curves = pickle.load(f)
     f.close()
-    print "Dispersion curves stored in variable 'curves'"
+    print("Dispersion curves stored in variable 'curves'")

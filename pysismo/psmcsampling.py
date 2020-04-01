@@ -88,14 +88,14 @@ class Parameter:
 
         if abs(self._step - other._step) > EPS:
             s = "Warning: parameters {} and {} have different sampling steps"
-            print s.format(self, other)
+            print(s.format(self, other))
         if abs(self._maxjumpsize - other._maxjumpsize) > EPS:
             s = "Warning: parameters {} and {} have different max jump size"
-            print s.format(self, other)
+            print(s.format(self, other))
         if self.nsample != other.nsample:
             raise Exception("Parameters must have the same nb of samples")
 
-        m = Parameter(name=u"{} + {}".format(self.name, other.name),
+        m = Parameter(name="{} + {}".format(self.name, other.name),
                       minval=self._minval + other._minval,
                       maxval=self._maxval + other._maxval,
                       step=max(self._step, other._step),
@@ -118,7 +118,7 @@ class Parameter:
         """
         return self.values[self._currentindex]
 
-    def next(self):
+    def __next__(self):
         """
         Next proposed value
         """
@@ -173,7 +173,10 @@ class Parameter:
                          self._maxval + 1.5 * self._step,
                          self._step)
         samples = self.samples[nburnt:self.nsample]
-        ax.hist(samples, bins=bins, normed=True, label='sampled distribution')
+        #MODIFIED BY LOUIS AttributeError: 'Rectangle' object has no property 'normed'
+        #ax.hist(samples, bins=bins, normed=True, label='sampled distribution')
+        ax.hist(samples, bins=bins, label='sampled distribution')
+        
 
         # prior (uniform) distribution
         if self._maxval > self._minval:

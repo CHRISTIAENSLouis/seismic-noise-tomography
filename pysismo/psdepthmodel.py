@@ -14,7 +14,7 @@ from easyprocess import EasyProcess
 import tempfile
 
 # getting the dir of the binaries of the Computer Programs in Seismology
-from psconfig import COMPUTER_PROGRAMS_IN_SEISMOLOGY_DIR
+from .psconfig import COMPUTER_PROGRAMS_IN_SEISMOLOGY_DIR
 
 
 # default header of the model file:
@@ -209,7 +209,7 @@ def Rayleigh_group_velocities(periods, dz, vp, vs, rho, verbose=False):
 
     # preparing input files
     if verbose:
-        print 'Preparing model and periods files'
+        print('Preparing model and periods files')
     create_model_file('model', dz, vp, vs, rho)
     f = open('periods', 'w')
     f.write('\n'.join([str(p) for p in periods]))
@@ -217,36 +217,36 @@ def Rayleigh_group_velocities(periods, dz, vp, vs, rho, verbose=False):
 
     # preparing model
     if verbose:
-        print "Calling sprep96"
+        print("Calling sprep96")
     cmd = os.path.join(COMPUTER_PROGRAMS_IN_SEISMOLOGY_DIR, 'sprep96')
     # Rayleigh wave, fundamental mode
     p = EasyProcess('"{}" -M model -PARR periods -NMOD 1 -R'.format(cmd)).call()
     if verbose:
-        print p.stdout
+        print(p.stdout)
 
     # phase dispersion curve
     if verbose:
-        print "Calling sdisp96"
+        print("Calling sdisp96")
     cmd = os.path.join(COMPUTER_PROGRAMS_IN_SEISMOLOGY_DIR, 'sdisp96')
     p = EasyProcess('"{}" -v'.format(cmd)).call()
     if verbose:
-        print p.stdout
+        print(p.stdout)
 
     # group dispersion curve
     if verbose:
-        print "Calling sregn96"
+        print("Calling sregn96")
     cmd = os.path.join(COMPUTER_PROGRAMS_IN_SEISMOLOGY_DIR, 'sregn96')
     p = EasyProcess('"{}"'.format(cmd)).call()
     if verbose:
-        print p.stdout
+        print(p.stdout)
 
     # exporting group velocities (-U) of Rayleigh waves (-R) in ascii file
     if verbose:
-        print "Calling sdpegn96"
+        print("Calling sdpegn96")
     cmd = os.path.join(COMPUTER_PROGRAMS_IN_SEISMOLOGY_DIR, 'sdpegn96')
     p = EasyProcess('"{}" -R -S -U -XLOG -PER -ASC'.format(cmd)).call()
     if verbose:
-        print p.stdout
+        print(p.stdout)
 
     # loading group velocities from 6th column of ascii file
     vg = np.loadtxt('SREGN.ASC', skiprows=1, usecols=(5,))
