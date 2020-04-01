@@ -53,24 +53,26 @@ from pysismo.psconfig import CROSSCORR_DIR
 
 # loading cross-correlations (looking for *.pickle files in dir *CROSSCORR_DIR*)
 flist = sorted(glob.glob(os.path.join(CROSSCORR_DIR, 'xcorr*.pickle*')))
-print 'Select file(s) containing cross-correlations to process: [All except backups]'
-print '0 - All except backups (*~)'
-print '\n'.join('{} - {}'.format(i + 1, os.path.basename(f))
-                for i, f in enumerate(flist))
+print('Select file(s) containing cross-correlations to process: [All except backups]')
+print('0 - All except backups (*~)')
+print('\n'.join('{} - {}'.format(i + 1, os.path.basename(f))
+                for i, f in enumerate(flist)))
 
-res = raw_input('\n')
+res = input('\n')
+
 if not res:
     pickle_files = [f for f in flist if f[-1] != '~']
 else:
     pickle_files = [flist[int(i)-1] for i in res.split()]
 
-usersuffix = raw_input("\nEnter suffix to append: [none]\n").strip()
+usersuffix = input("\nEnter suffix to append: [none]\n").strip()
+
 
 # processing each set of cross-correlations
 for pickle_file in pickle_files:
-    print "\nProcessing cross-correlations of file: " + pickle_file
+    print("\nProcessing cross-correlations of file: " + pickle_file)
     xc = pscrosscorr.load_pickled_xcorr(pickle_file)
-
+    print("test")
     # copying the suffix of cross-correlations file
     # (everything between 'xcorr_' and the extension)
     suffix = os.path.splitext(os.path.basename(pickle_file))[0].replace('xcorr_', '')
@@ -100,3 +102,7 @@ for pickle_file in pickle_files:
     # See other options in the docstring of the function.
 
     xc.FTANs(suffix=suffix, whiten=False, normalize_ampl=True, logscale=True)
+
+
+
+

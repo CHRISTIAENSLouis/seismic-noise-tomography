@@ -1,4 +1,3 @@
-#!/usr/bin/python -u
 """
 [Advice: run this script using python with unbuffered output:
 `python -u crosscorrelation.py`]
@@ -11,7 +10,7 @@ from dataless seed files (if *USE_DATALESSPAZ* = True) located in
 folder *DATALESS_DIR*, and/or stationXML files (if *USE_STATIONXML* =
 True) located in folder *STATIONXML_DIR*. Note that two different
 stations MUST HAVE DIFFERENT NAMES, even if they do not belong to
-the same network. Also, one given station cannot have several
+the same network. Also, one given station cannot have several£
 sets of coordinates: if so, it will be skipped.
 
 In the current version of the program, miniseed files MUST be
@@ -121,26 +120,27 @@ from pysismo.psconfig import (
     ONEBIT_NORM, FREQMIN_EARTHQUAKE, FREQMAX_EARTHQUAKE, WINDOW_TIME, WINDOW_FREQ,
     CROSSCORR_TMAX)
 
-print "\nProcessing parameters:"
-print "- dir of miniseed data: " + MSEED_DIR
-print "- dir of dataless seed data: " + DATALESS_DIR
-print "- dir of stationXML data: " + STATIONXML_DIR
-print "- output dir: " + CROSSCORR_DIR
-print "- band-pass: {:.1f}-{:.1f} s".format(1.0 / FREQMAX, 1.0 / FREQMIN)
+print("\nProcessing parameters:")
+print("- dir of miniseed data: " + MSEED_DIR)
+print("- dir of dataless seed data: " + DATALESS_DIR)
+print("- dir of stationXML data: " + STATIONXML_DIR)
+print("- output dir: " + CROSSCORR_DIR)
+print("- band-pass: {:.1f}-{:.1f} s".format(1.0 / FREQMAX, 1.0 / FREQMIN))
 if ONEBIT_NORM:
-    print "- normalization in time-domain: one-bit normalization"
+    print("- normalization in time-domain: one-bit normalization")
 else:
     s = ("- normalization in time-domain: "
          "running normalization in earthquake band ({:.1f}-{:.1f} s)")
-    print s.format(1.0 / FREQMAX_EARTHQUAKE, 1.0 / FREQMIN_EARTHQUAKE)
+    print(s.format(1.0 / FREQMAX_EARTHQUAKE, 1.0 / FREQMIN_EARTHQUAKE))
 fmt = '%d/%m/%Y'
 s = "- cross-correlation will be stacked between {}-{}"
-print s.format(FIRSTDAY.strftime(fmt), LASTDAY.strftime(fmt))
+print(s.format(FIRSTDAY.strftime(fmt), LASTDAY.strftime(fmt)))
 subset = CROSSCORR_STATIONS_SUBSET
 if subset:
-    print "  for stations: {}".format(', '.join(subset))
-print
+    print("  for stations: {}".format(', '.join(subset)))
+print()
 
+suffix= None 
 
 # ========================================
 # Name of output files (without extension).
@@ -161,11 +161,12 @@ OUTBASENAME_PARTS = [
 ]
 OUTFILESPATH = os.path.join(CROSSCORR_DIR, '_'.join(p for p in OUTBASENAME_PARTS if p))
 
-print 'Default name of output files (without extension):\n"{}"\n'.format(OUTFILESPATH)
-suffix = raw_input("Enter suffix to append: [none]\n")
+print('Default name of output files (without extension):\n"{}"\n'.format(OUTFILESPATH))
+if suffix is None:
+    suffix = input("Enter suffix to append: [none]\n")
 if suffix:
-    OUTFILESPATH = u'{}_{}'.format(OUTFILESPATH, suffix)
-print 'Results will be exported to files:\n"{}" (+ extension)\n'.format(OUTFILESPATH)
+    OUTFILESPATH = '{}_{}'.format(OUTFILESPATH, suffix)
+print('Results will be exported to files:\n"{}" (+ extension)\n'.format(OUTFILESPATH))
 
 # ============
 # Main program
@@ -185,13 +186,100 @@ if USE_STATIONXML:
                                                            verbose=True)
 
 # Getting list of stations
-print
+print()
 stations = psstation.get_stations(mseed_dir=MSEED_DIR,
                                   xml_inventories=xml_inventories,
                                   dataless_inventories=dataless_inventories,
                                   startday=FIRSTDAY,
                                   endday=LASTDAY,
                                   verbose=True)
+
+
+
+# =============================================================
+# preparing functions that get one merged trace per station
+# and pre-process trace, ready to be parallelized (if required)
+# =============================================================
+
+def get_merged_trace(station):
+    """
+    Preparing func that returns one trace from selected station,
+    at current date. Function is ready to be parallelized.
+    """
+    trace = pscrosscorr.get_merged_trace(station=station,
+                                             date=date,
+                                             skiplocs=CROSSCORR_SKIPLOCS,
+                                             minfill=MINFILL)
+  
+    try:
+        trace = pscrosscorr.get_merged_trace(station=station,
+                                             date=date,
+                                             skiplocs=CROSSCORR_SKIPLOCS,
+                                             minfill=MINFILL)
+        errmsg = None
+    except pserrors.CannotPreprocess as err:
+        # cannot preprocess if no trace or daily fill < *minfill*
+        trace = None
+        errmsg = '{}: skipping'.format(err)
+    except Exception as err:
+        # unhandled exception!
+        trace = None
+        errmsg = 'Unhandled error: {}'.format(err)
+
+    if errmsg:
+        # printing error message
+        print('{}.{} [{}] '.format(station.network, station.name, errmsg), end=' ')
+
+    return trace
+
+def preprocessed_trace(xxx_todo_changeme):
+    """
+    Preparing func that returns processed trace: processing includes
+    removal of instrumental response, band-pass filtering, demeaning,
+    detrending, downsampling, time-normalization and spectral whitening
+    (see pscrosscorr.preprocess_trace()'s doc)
+
+    Function is ready to be parallelized.
+    """
+    (trace, response) = xxx_todo_changeme
+    if not trace or response is False:
+        return
+
+    network = trace.stats.network
+    station = trace.stats.station
+    try:
+        pscrosscorr.preprocess_trace(
+            trace=trace,
+            paz=response,
+            freqmin=FREQMIN,
+            freqmax=FREQMAX,
+            freqmin_earthquake=FREQMIN_EARTHQUAKE,
+            freqmax_earthquake=FREQMAX_EARTHQUAKE,
+            corners=CORNERS,
+            zerophase=ZEROPHASE,
+            period_resample=PERIOD_RESAMPLE,
+            onebit_norm=ONEBIT_NORM,
+            window_time=WINDOW_TIME,
+            window_freq=WINDOW_FREQ)
+        msg = 'ok'
+    except pserrors.CannotPreprocess as err:
+        # cannot preprocess if no instrument response was found,
+        # trace data are not consistent etc. (see function's doc)
+        trace = None
+        msg = '{}: skipping'.format(err)
+    except Exception as err:
+        # unhandled exception!
+        trace = None
+        msg = 'Unhandled error: {}'.format(err)
+
+    # printing output (error or ok) message
+    print('{}.{} [{}] '.format(network, station, msg), end=' ')
+
+    # although processing is performed in-place, trace is returned
+    # in order to get it back after multi-processing
+    return trace
+
+#https://github.com/obspy/obspy/issues/2446 package à modif, fftpack error, remove response
 
 # Initializing collection of cross-correlations
 xc = pscrosscorr.CrossCorrelationCollection()
@@ -204,11 +292,11 @@ for date in dates:
     # exporting the collection of cross-correlations after the end of each
     # processed month (allows to restart after a crash from that date)
     if date.day == 1:
-        with open(u'{}.part.pickle'.format(OUTFILESPATH), 'wb') as f:
-            print "\nExporting cross-correlations calculated until now to: " + f.name
+        with open('{}.part.pickle'.format(OUTFILESPATH), 'wb') as f:
+            print("\nExporting cross-correlations calculated until now to: " + f.name)
             pickle.dump(xc, f, protocol=2)
 
-    print "\nProcessing data of day {}".format(date)
+    print("\nProcessing data of day {}".format(date))
 
     # loop on stations appearing in subdir corresponding to current month
     month_subdir = '{year}-{month:02d}'.format(year=date.year, month=date.month)
@@ -218,83 +306,6 @@ for date in dates:
     if CROSSCORR_STATIONS_SUBSET:
         month_stations = [sta for sta in month_stations
                           if sta.name in CROSSCORR_STATIONS_SUBSET]
-
-    # =============================================================
-    # preparing functions that get one merged trace per station
-    # and pre-process trace, ready to be parallelized (if required)
-    # =============================================================
-
-    def get_merged_trace(station):
-        """
-        Preparing func that returns one trace from selected station,
-        at current date. Function is ready to be parallelized.
-        """
-        try:
-            trace = pscrosscorr.get_merged_trace(station=station,
-                                                 date=date,
-                                                 skiplocs=CROSSCORR_SKIPLOCS,
-                                                 minfill=MINFILL)
-            errmsg = None
-        except pserrors.CannotPreprocess as err:
-            # cannot preprocess if no trace or daily fill < *minfill*
-            trace = None
-            errmsg = '{}: skipping'.format(err)
-        except Exception as err:
-            # unhandled exception!
-            trace = None
-            errmsg = 'Unhandled error: {}'.format(err)
-
-        if errmsg:
-            # printing error message
-            print '{}.{} [{}] '.format(station.network, station.name, errmsg),
-
-        return trace
-
-    def preprocessed_trace((trace, response)):
-        """
-        Preparing func that returns processed trace: processing includes
-        removal of instrumental response, band-pass filtering, demeaning,
-        detrending, downsampling, time-normalization and spectral whitening
-        (see pscrosscorr.preprocess_trace()'s doc)
-
-        Function is ready to be parallelized.
-        """
-        if not trace or response is False:
-            return
-
-        network = trace.stats.network
-        station = trace.stats.station
-        try:
-            pscrosscorr.preprocess_trace(
-                trace=trace,
-                paz=response,
-                freqmin=FREQMIN,
-                freqmax=FREQMAX,
-                freqmin_earthquake=FREQMIN_EARTHQUAKE,
-                freqmax_earthquake=FREQMAX_EARTHQUAKE,
-                corners=CORNERS,
-                zerophase=ZEROPHASE,
-                period_resample=PERIOD_RESAMPLE,
-                onebit_norm=ONEBIT_NORM,
-                window_time=WINDOW_TIME,
-                window_freq=WINDOW_FREQ)
-            msg = 'ok'
-        except pserrors.CannotPreprocess as err:
-            # cannot preprocess if no instrument response was found,
-            # trace data are not consistent etc. (see function's doc)
-            trace = None
-            msg = '{}: skipping'.format(err)
-        except Exception as err:
-            # unhandled exception!
-            trace = None
-            msg = 'Unhandled error: {}'.format(err)
-
-        # printing output (error or ok) message
-        print '{}.{} [{}] '.format(network, station, msg),
-
-        # although processing is performed in-place, trace is returned
-        # in order to get it back after multi-processing
-        return trace
 
     # ====================================
     # getting one merged trace per station
@@ -317,6 +328,9 @@ for date in dates:
     # =====================================================
 
     responses = []
+    
+    # print([i.stats for i in traces])
+    
     for tr in traces:
         if not tr:
             responses.append(None)
@@ -345,7 +359,7 @@ for date in dates:
         responses.append(response)
         if errmsg:
             # printing error message
-            print '{}.{} [{}] '.format(tr.stats.network, tr.stats.station, errmsg),
+            print('{}.{} [{}] '.format(tr.stats.network, tr.stats.station, errmsg), end=' ')
 
     # =================
     # processing traces
@@ -353,26 +367,26 @@ for date in dates:
 
     if MULTIPROCESSING['process trace']:
         # multiprocessing turned on: one process per station
+        print('multiprocessing on')
         pool = mp.Pool(NB_PROCESSES)
-        traces = pool.map(preprocessed_trace, zip(traces, responses))
+        traces = pool.map(preprocessed_trace, list(zip(traces, responses)))
         pool.close()
         pool.join()
     else:
         # multiprocessing turned off: processing stations one after another
         traces = [preprocessed_trace((tr, res)) for tr, res in zip(traces, responses)]
-
     # setting up dict of current date's traces, {station: trace}
     tracedict = {s.name: trace for s, trace in zip(month_stations, traces) if trace}
 
     delta = (dt.datetime.now() - t0).total_seconds()
-    print "\nProcessed stations in {:.1f} seconds".format(delta)
+    print("\nProcessed stations in {:.1f} seconds".format(delta))
 
     # ==============================================
     # stacking cross-correlations of the current day
     # ==============================================
 
     if len(tracedict) < 2:
-        print "No cross-correlation for this day"
+        print("No cross-correlation for this day")
         continue
 
     t0 = dt.datetime.now()
@@ -381,7 +395,7 @@ for date in dates:
         # if multiprocessing is turned on, we pre-calculate cross-correlation
         # arrays between pairs of stations (one process per pair) and feed
         # them to xc.add() (which won't have to recalculate them)
-        print "Pre-calculating cross-correlation arrays"
+        print("Pre-calculating cross-correlation arrays")
 
         def xcorr_func(pair):
             """
@@ -389,7 +403,7 @@ for date in dates:
             beween two traces
             """
             (s1, tr1), (s2, tr2) = pair
-            print '{}-{} '.format(s1, s2),
+            print('{}-{} '.format(s1, s2), end=' ')
             shift = int(CROSSCORR_TMAX / PERIOD_RESAMPLE)
             xcorr = obspy.signal.cross_correlation.xcorr(
                 tr1, tr2, shift_len=shift, full_xcorr=True)[2]
@@ -401,9 +415,9 @@ for date in dates:
         pool.close()
         pool.join()
         xcorrdict = {(s1, s2): xcorr for ((s1, _), (s2, _)), xcorr in zip(pairs, xcorrs)}
-        print
+        print()
 
-    print "Stacking cross-correlations"
+    print("Stacking cross-correlations")
     xc.add(tracedict=tracedict,
            stations=stations,
            xcorr_tmax=CROSSCORR_TMAX,
@@ -411,17 +425,17 @@ for date in dates:
            verbose=not MULTIPROCESSING['cross-corr'])
 
     delta = (dt.datetime.now() - t0).total_seconds()
-    print "Calculated and stacked cross-correlations in {:.1f} seconds".format(delta)
+    print("Calculated and stacked cross-correlations in {:.1f} seconds".format(delta))
 
 # exporting cross-correlations
 if not xc.pairs():
-    print "No cross-correlation could be calculated: nothing to export!"
+    print("No cross-correlation could be calculated: nothing to export!")
 else:
     # exporting to binary and ascii files
     xc.export(outprefix=OUTFILESPATH, stations=stations, verbose=True)
 
     # exporting to png file
-    print "Exporting cross-correlations to file: {}.png".format(OUTFILESPATH)
+    print("Exporting cross-correlations to file: {}.png".format(OUTFILESPATH))
     # optimizing time-scale: max time = max distance / vmin (vmin = 2.5 km/s)
     maxdist = max([xc[s1][s2].dist() for s1, s2 in xc.pairs()])
     maxt = min(CROSSCORR_TMAX, maxdist / 2.5)
@@ -429,6 +443,6 @@ else:
 
 # removing file containing periodical exports of cross-corrs
 try:
-    os.remove(u'{}.part.pickle'.format(OUTFILESPATH))
+    os.remove('{}.part.pickle'.format(OUTFILESPATH))
 except:
     pass

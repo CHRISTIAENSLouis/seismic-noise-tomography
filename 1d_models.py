@@ -84,6 +84,7 @@ list of observed dispersion curves, as a list of numpy arrays
 distribution by the MCMC algorithm, as a list of instances of VsModel
 (module psdepthmodel) [vsmodel1, vsmodel2 ...]
 """
+
 from pysismo import psdepthmodel, psmcsampling
 import os
 import shutil
@@ -101,16 +102,16 @@ from pysismo.psconfig import TOMO_DIR, DEPTHMODELS_DIR
 # nodes of the dispersion maps
 # ==================================================================
 
-LOCATIONS = {'Parana basin': (-52, -22),
-             'Sao Francisco craton': (-45, -19),
-             'Tocantins province': (-49, -13)
+LOCATIONS = {'Bruxelles': (4.16, 50.83),
+             'Mons': (3.98, 50.5),
+             'Liege': (5.51, 50.51)
              }
 NB_NEIGHBORS = 1
 
-print u"Select location(s) on which estimate depth models [all]:"
-print '0 - All'
-print '\n'.join('{} - {}'.format(i + 1, k) for i, k in enumerate(sorted(LOCATIONS)))
-res = raw_input('\n')
+print("Select location(s) on which estimate depth models [all]:")
+print('0 - All')
+print('\n'.join('{} - {}'.format(i + 1, k) for i, k in enumerate(sorted(LOCATIONS))))
+res = input('\n')
 if res:
     LOCATIONS = dict(sorted(LOCATIONS.items())[int(i) - 1] for i in res.split())
 
@@ -159,15 +160,15 @@ DZ_CRUST_BOUNDS = (10.0, 30.0)
 MOHO_DEPTH_BOUNDS = (35.0, 50.0)
 # location-specific bounds (if available)
 # sediments thickness: 2 km around (rounded) value of Laske & Masters
-LOCAL_DZ_SEDIMENTS_BOUNDS = {'Parana basin': (3.0, 7.0),      # Laske & Masters: 4.5 4.5 5 5.2 km
-                             'Sao Francisco craton': (0.0, 2.0),  # (neighbours) 0.1 0.1 0.25 0.4 km
-                             'Tocantins province': (0.0, 2.0)}                 # 0.01 0.01 0.1 0.1 km
+LOCAL_DZ_SEDIMENTS_BOUNDS = {'Bruxelles': (3.0, 7.0),      # Laske & Masters: 4.5 4.5 5 5.2 km
+                             'Mons': (0.0, 2.0),  # (neighbours) 0.1 0.1 0.25 0.4 km
+                             'Liege': (0.0, 2.0)}                 # 0.01 0.01 0.1 0.1 km
 LOCAL_VS_CRUST_BOUNDS = {}
 LOCAL_DZ_CRUST_BOUNDS = {}
 # Moho depth: 5 km around (rounded) value of Assumpcao et al.
-LOCAL_MOHO_DEPTH_BOUNDS = {'Parana basin': (38.0, 48.0),  # Assumpcao et al.: 43.4 km
-                           'Sao Francisco craton': (35.0, 45.0),            # 39.7 km
-                           'Tocantins province': (33.0, 43.0)               # 38 km
+LOCAL_MOHO_DEPTH_BOUNDS = {'Bruxelles': (38.0, 48.0),  # Assumpcao et al.: 43.4 km
+                           'Mons': (35.0, 45.0),            # 39.7 km
+                           'Liege': (33.0, 43.0)               # 38 km
                            }   # from Assumpcao et al.
 # min Vs increment (set to 0 to force Vs increase with depth)
 VS_MIN_INCREMENT = 0.0
@@ -188,44 +189,50 @@ DZ_CRUSTLAYER_SAMPLINGSTEP = 1.0
 DZ_CRUSTLAYER_MAXJUMP = 2.0
 # nb of samples
 NB_SAMPLES = 50000
-res = raw_input('Number of samples of MC exploration? [{}]\n'.format(NB_SAMPLES))
+res = input('Number of samples of MC exploration? [{}]\n'.format(NB_SAMPLES))
 NB_SAMPLES = int(res) if res.strip() else NB_SAMPLES
 # nb of burnt in samples
 NB_BURN = min(int(NB_SAMPLES / 10), 200)
-res = raw_input('Number of burnt in samples? [{}]\n'.format(NB_BURN))
+res = input('Number of burnt in samples? [{}]\n'.format(NB_BURN))
 NB_BURN = int(res) if res.strip() else NB_BURN
 
 
 # user-defined suffix to append to file names
-usersuffix = raw_input("\nEnter suffix to append: [none]\n").strip()
+usersuffix = input("\nEnter suffix to append: [none]\n").strip()
 
 # =====================================================================
 # assigning to each period a dispersion map from which group velocities
 # will be etxracted, in a dict {period: velocity map}
 # =====================================================================
 
-print "Loading velocity maps"
-s = ('2-pass-tomography_1996-2012_xmlresponse_3-60s_'
-     'earthquake-band=3-60s_periods=6-10s.pickle')
+print("Loading velocity maps")
+s = ('2-pass-tomography_2019-2020_xmlresponse_1_1_1.pickle')
 PICKLE_FILE_SHORT_PERIODS = os.path.join(TOMO_DIR, s)
-s = ('2-pass-tomography_1996-2012_xmlresponse_7-60s_'
-     'earthquake-band=7-60s_periods=10-30s.pickle')
+s = ('2-pass-tomography_2019-2020_xmlresponse_1_1_1.pickle')
 PICKLE_FILE_LONG_PERIODS = os.path.join(TOMO_DIR, s)
 
 with open(PICKLE_FILE_SHORT_PERIODS, 'rb') as f:
     VMAPS_SHORT = pickle.load(f)
 with open(PICKLE_FILE_LONG_PERIODS, 'rb') as f:
     VMAPS_LONG = pickle.load(f)
+print(VMAPS_LONG)
+print(VMAPS_SHORT)
+#Problème 1
+#PERIODVMAPS = {T: (VMAPS_SHORT[T] if T <= 10 else VMAPS_LONG[T]) for T in range(6, 26)}
+#ADD BY LOUIS
+PERIODVMAPS=VMAPS_LONG
 
-PERIODVMAPS = {T: (VMAPS_SHORT[T] if T <= 10 else VMAPS_LONG[T]) for T in range(6, 26)}
+
 PERIODS = np.array(sorted(PERIODVMAPS.keys()))
+
+
 
 # =========================
 # loop on selected location
 # =========================
 
 for locname, (lon, lat) in sorted(LOCATIONS.items()):
-    print "Working at location '{}': lon={}, lat={}".format(locname, lon, lat)
+    print("Working at location '{}': lon={}, lat={}".format(locname, lon, lat))
 
     # getting location-specific parameters/bounds if available, else default ones
     # parameters
@@ -257,7 +264,7 @@ for locname, (lon, lat) in sorted(LOCATIONS.items()):
     # getting the dispersion curves at the *NB_NEIGHBORS* nearest nodes
     # =================================================================
 
-    print "  getting observed dispersion curves at nearest nodes"
+    print("  getting observed dispersion curves at nearest nodes")
     vgarrays = [np.zeros_like(PERIODS, dtype='float') for _ in range(NB_NEIGHBORS)]
     meanvg = np.zeros_like(PERIODS, dtype='float')
     sigmavg = np.zeros_like(PERIODS, dtype='float')
@@ -318,7 +325,7 @@ for locname, (lon, lat) in sorted(LOCATIONS.items()):
                                     sigmavg=sigmavg)
 
     # estimating best-fitting parameters (thickness and Vs of layers)
-    print "  estimating best-fitting depth model"
+    print("  estimating best-fitting depth model")
 
     # initial parameters
     dz0_sediments = 4.0
@@ -443,7 +450,7 @@ for locname, (lon, lat) in sorted(LOCATIONS.items()):
     # Monte Carlo sampling with Metropolis rule turned off (1st loop) and on (2nd loop)
     for switchon_Metropolis in [False, True]:
         s = "  Monte Carlo sampling of the {} distribution of the parameters"
-        print s.format('prior' if not switchon_Metropolis else 'posterior')
+        print(s.format('prior' if not switchon_Metropolis else 'posterior'))
 
         # (re-)initializing parameters
         for m in parameters:
@@ -454,8 +461,9 @@ for locname, (lon, lat) in sorted(LOCATIONS.items()):
         for isample in range(NB_SAMPLES):
             if switchon_Metropolis and (isample + 1) / 10 == (isample + 1) / float(10):
                 s = '    Collected {} / {} samples ({:.1f} % of the moves accepted)'
-                relaccepted = float(isample - nrefused) / isample
-                print s.format(isample + 1, NB_SAMPLES, 100.0 * relaccepted)
+                relaccepted = float(isample - nrefused) / (isample+1) #ADDED +1 by LOUIS : ZeroDivisionError: float division by zero
+
+                print(s.format(isample + 1, NB_SAMPLES, 100.0 * relaccepted))
 
             # adding sample to posterior distribution
             for m in parameters:
@@ -484,21 +492,21 @@ for locname, (lon, lat) in sorted(LOCATIONS.items()):
             # we always refuse move towards an implausible model
             if not VS_MIN_INCREMENT is None:
                 # checking Vs increments
-                Vsincr = [m1.next() - m0.next()
+                Vsincr = [next(m1) - next(m0)
                           for m0, m1 in zip(vscrustlayers[:-1], vscrustlayers[1:])]
                 if any(dVs < VS_MIN_INCREMENT for dVs in Vsincr):
                     nrefused += 1
                     continue
             # checking Moho depth
-            total_thickness = sum(m.next() for m in dzlayers)
+            total_thickness = sum(next(m) for m in dzlayers)
             if not moho_depth_bounds[0] <= total_thickness <= moho_depth_bounds[1]:
                 nrefused += 1
                 continue
 
             # Vs model corresponding to the proposed parameters value
             vsmodel_next = psdepthmodel.VsModel(
-                vs=np.r_[vs_sediments, [m.next() for m in vscrustlayers], vs_mantle],
-                dz=[m.next() for m in dzlayers],
+                vs=np.r_[vs_sediments, [next(m) for m in vscrustlayers], vs_mantle],
+                dz=[next(m) for m in dzlayers],
                 ratio_vp_vs=ratio_vp_vs,
                 ratio_rho_vs=ratio_rho_vs,
                 name='Sample of posterior distribution')
@@ -531,10 +539,10 @@ for locname, (lon, lat) in sorted(LOCATIONS.items()):
             # out prefix = e.g., "1d models/Parana basin (prior distribution)"
             outprefix = os.path.join(DEPTHMODELS_DIR, locname + ' (prior distribution)')
             if usersuffix:
-                outprefix += u'_{}'.format(usersuffix)
+                outprefix += '_{}'.format(usersuffix)
 
-            outfile = u'{}.png'.format(outprefix)
-            print "  exporting prior distributions to file: " + outfile
+            outfile = '{}.png'.format(outprefix)
+            print("  exporting prior distributions to file: " + outfile)
             fig = plt.figure(figsize=(5 * (nb_crust_layers + 1), 10), tight_layout=True)
 
             # Vs distributions
@@ -562,10 +570,10 @@ for locname, (lon, lat) in sorted(LOCATIONS.items()):
     # out prefix = e.g., "1d models/Parana basin"
     outprefix = os.path.join(DEPTHMODELS_DIR, locname)
     if usersuffix:
-        outprefix += u'_{}'.format(usersuffix)
+        outprefix += '_{}'.format(usersuffix)
 
-    outfile = u'{}.pickle'.format(outprefix)
-    print '    dumping observed vg and sampled models to file: ' + outfile
+    outfile = '{}.pickle'.format(outprefix)
+    print('    dumping observed vg and sampled models to file: ' + outfile)
     if os.path.exists(outfile):
         # backup
         shutil.copy(outfile, outfile + '~')
@@ -582,8 +590,8 @@ for locname, (lon, lat) in sorted(LOCATIONS.items()):
     # plotting results: 95% confidence intervals, posterior distributions...
     # =====================================================================
 
-    outfile = u'{}.png'.format(outprefix)
-    print "    plotting results and saving to file: " + outfile
+    outfile = '{}.png'.format(outprefix)
+    print("    plotting results and saving to file: " + outfile)
 
     ncols = nb_crust_layers + 2
     nrows = 3

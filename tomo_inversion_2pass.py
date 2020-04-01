@@ -98,22 +98,22 @@ from pysismo.psconfig import FTAN_DIR, TOMO_DIR
 
 # selecting dispersion curves
 flist = sorted(glob.glob(os.path.join(FTAN_DIR, 'FTAN*.pickle*')))
-print 'Select file(s) containing dispersion curves to process: [All except backups]'
-print '0 - All except backups (*~)'
-print '\n'.join('{} - {}'.format(i + 1, os.path.basename(f))
-                for i, f in enumerate(flist))
+print('Select file(s) containing dispersion curves to process: [All except backups]')
+print('0 - All except backups (*~)')
+print('\n'.join('{} - {}'.format(i + 1, os.path.basename(f))
+                for i, f in enumerate(flist)))
 
-res = raw_input('\n')
+res = input('\n')
 if not res:
     pickle_files = [f for f in flist if f[-1] != '~']
 else:
     pickle_files = [flist[int(i)-1] for i in res.split()]
 
-usersuffix = raw_input("\nEnter suffix to append: [none]\n").strip()
+usersuffix = input("\nEnter suffix to append: [none]\n").strip()
 
 # loop on pickled curves
 for pickle_file in pickle_files:
-    print "\nProcessing dispersion curves of file: " + pickle_file
+    print("\nProcessing dispersion curves of file: " + pickle_file)
 
     f = open(pickle_file, 'rb')
     curves = pickle.load(f)
@@ -133,8 +133,8 @@ for pickle_file in pickle_files:
         outprefix += '_{}'.format(usersuffix)
     pdfname = outprefix + '.pdf'
     picklename = outprefix + '.pickle'
-    print "Maps will be exported as figures to file: " + pdfname
-    print "Final (2-passed) maps will be pickled to file: " + picklename
+    print("Maps will be exported as figures to file: " + pdfname)
+    print("Final (2-passed) maps will be pickled to file: " + picklename)
 
     # backup of pdf
     if os.path.exists(pdfname):
@@ -144,7 +144,7 @@ for pickle_file in pickle_files:
     # performing tomographic inversions at given periods
     vmaps = {}  # initializing dict of final maps
     for period in PERIODS:
-        print "\nDoing period = {} s".format(period)
+        print("\nDoing period = {} s".format(period))
 
         periodfigs = []
 
@@ -153,10 +153,10 @@ for pickle_file in pickle_files:
         for passnb in (0, 1):
             s = ("{} pass (rejecting {} pairs): grid step = {}, min SNR = {}, "
                  "corr. length = {} km, alpha = {}, beta = {}, lambda = {}")
-            print s.format('1st' if passnb == 0 else '2nd', len(skippairs),
+            print(s.format('1st' if passnb == 0 else '2nd', len(skippairs),
                            GRID_STEPS[passnb], MINPECTSNRS[passnb],
                            CORR_LENGTHS[passnb], ALPHAS[passnb],
-                           BETAS[passnb], LAMBDAS[passnb])
+                           BETAS[passnb], LAMBDAS[passnb]))
 
             # Performing the tomographic inversion to produce a velocity map
             # at period = *period* , with parameters given above:
@@ -187,7 +187,7 @@ for pickle_file in pickle_files:
                                        beta=BETAS[passnb],
                                        lambda_=LAMBDAS[passnb])
             except CannotPerformTomoInversion as err:
-                print "Cannot perform tomo inversion: {}".format(err)
+                print("Cannot perform tomo inversion: {}".format(err))
                 for fig in periodfigs:
                     plt.close(fig)
                 # next period
@@ -238,8 +238,8 @@ for pickle_file in pickle_files:
             # let's compare the 2-pass tomography with a one-pass tomography
             s = ("One-pass tomography: grid step = {}, min SNR = {}, "
                  "corr. length = {} km, alpha = {}, beta = {}, lambda = {}")
-            print s.format(GRID_STEPS[1], MINPECTSNRS[1], CORR_LENGTHS[1],
-                           ALPHAS[1], BETAS[1], LAMBDAS[1])
+            print(s.format(GRID_STEPS[1], MINPECTSNRS[1], CORR_LENGTHS[1],
+                           ALPHAS[1], BETAS[1], LAMBDAS[1]))
 
             # tomographic inversion
             try:
@@ -254,7 +254,7 @@ for pickle_file in pickle_files:
                                        beta=BETAS[1],
                                        lambda_=LAMBDAS[1])
             except CannotPerformTomoInversion as err:
-                print "Cannot perform tomo inversion: {}".format(err)
+                print("Cannot perform tomo inversion: {}".format(err))
                 for fig in periodfigs:
                     plt.close(fig)
                 # next period
@@ -278,19 +278,20 @@ for pickle_file in pickle_files:
                 plt.close(fig)
 
     # closing pdf file
-    pagenbs = range(pdf.get_pagecount())
+    pagenbs = list(range(pdf.get_pagecount()))
     pdf.close()
 
     # merging pages of pdf with similar period
     key = lambda pagenb: int(pagenb / 3)  # grouping pages 0-1-2, then 3-4-5 etc.
 
     pagesgroups = psutils.groupbykey(pagenbs, key=key)
-    print "\nMerging pages of pdf..."
+    print("\nMerging pages of pdf...")
     psutils.combine_pdf_pages(pdfname, pagesgroups, verbose=True)
 
     # exporting final maps (using pickle) as a dict:
     # {period: instance of pstomo.VelocityMap}
-    print "\nExporting final velocity maps to file: " + picklename
+    print("\nExporting final velocity maps to file: " + picklename)
     f = psutils.openandbackup(picklename, 'wb')
     pickle.dump(vmaps, f, protocol=2)
     f.close()
+
