@@ -9,7 +9,7 @@ such as [numpy](http://www.numpy.org/) and [scipy](http://www.scipy.org/).
 Upgrade and modifications by CHRISTIAENS L. 2020
 ------------
 
-This project is a forked version of the [original repository] (https://github.com/bgoutorbe/seismic-noise-tomography)  and is used as part of a master thesis at the [Polytechnic Faculty of Mons] (https://web.umons.ac.be/fpms/fr/) (Belgium).
+This project is a forked version of the [original repository](https://github.com/bgoutorbe/seismic-noise-tomography)  and is used as part of a master thesis at the [Polytechnic Faculty of Mons](https://web.umons.ac.be/fpms/fr/) (Belgium).
 
 The subject of this thesis is to explore a way to build seismic waves velocity models.
 
