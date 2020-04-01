@@ -4,21 +4,40 @@ This project is dedicated to provide a Python framework for seismic noise tomogr
 based on [ObsPy](https://github.com/obspy/obspy/wiki) and numerical Python packages 
 such as [numpy](http://www.numpy.org/) and [scipy](http://www.scipy.org/).
 
+
+
+Upgrade and modifications by CHRISTIAENS L. 2020
+------------
+
+This project is a forked version of the [original repository] (https://github.com/bgoutorbe/seismic-noise-tomography)  and is used as part of a master thesis at the [Polytechnic Faculty of Mons] (https://web.umons.ac.be/fpms/fr/) (Belgium).
+
+The subject of this thesis is to explore a way to build seismic waves velocity models.
+
+In order to work with more recent versions of its dependencies, the original code has been slightly modified. However, the format of its outputs remain the same.
+
+This thesis is a small part of much larger [project](https://geothermiemons.be/) focused on the exploitation of a geothermal reservoir in the area .
+
+
+
+
+
 Requirements
 ------------
 The code is developped and tested on Ubuntu (but should run on other platforms as well)
-with Python 2.7.
+with Python 3.6.9.
 
-In addition to [Python 2.7](https://www.python.org/download/releases/2.7/), you need
+As explained before, the code as been modified and tested to work with more recent versions of python and dependancies.
+
+In addition to [Python 3.6.9](https://www.python.org/downloads/release/python-369/), you need
 to install the following packages:
 
-- [numpy](http://www.numpy.org/) >= 1.8.2
-- [scipy](http://www.scipy.org/) >= 0.13.3
-- [matplotlib](http://matplotlib.org/) >= 1.3.1
-- [ObsPy](https://github.com/obspy/obspy/wiki) >= 0.9.2
-- [pyshp](https://github.com/GeospatialPython/pyshp)
-- [pyproj](https://code.google.com/p/pyproj/) >= 1.8.9
-- [pyPdf](http://pybrary.net/pyPdf/)
+- [numpy](http://www.numpy.org/) = 1.18.1
+- [scipy](http://www.scipy.org/) = 1.4.1
+- [matplotlib](http://matplotlib.org/) = 3.2.0
+- [ObsPy](https://github.com/obspy/obspy/wiki) = 1.2.1
+- [pyshp](https://github.com/GeospatialPython/pyshp)= 2.1.O
+- [pyproj](https://code.google.com/p/pyproj/) = 2.5.0
+- [pyPDF2](https://pypi.org/project/PyPDF2/) = 1.26.0
 
 It is recommended to install these packages with `pip install ...` or with your
 favourite package manager, e.g., `apt-get install ...`.
@@ -27,6 +46,8 @@ Optionally, you may want to install the
 [Computer Programs in Seismology](http://www.eas.slu.edu/eqc/eqccps.html)
 to be able to invert your dispersion maps for a 1-D shear velocity model,
 as these programs take care of the forward modelling.
+
+Here is a simple tutorial to archieve the installation of [those programs] (https://intra.sismo.ipgp.fr/eqcsoftware)
 
 How to start
 ------------
