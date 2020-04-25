@@ -619,7 +619,7 @@ class CrossCorrelation:
             xy = (t, ylim[0] + 0.1 * (ylim[1] - ylim[0]))
             axlist[0].annotate(s='{} km/s'.format(v), xy=xy, xytext=xy,
                                horizontalalignment=align, fontsize=8,
-                               bbox={'color': 'k', 'facecolor': 'white'})
+                               bbox={'color': 'w', 'facecolor': 'white'})
 
         # noise window
         axlist[0].fill_between(x=tnoise, y1=[ylim[1], ylim[1]],
@@ -634,7 +634,7 @@ class CrossCorrelation:
                        s="Original data, SNR = {:.1f}".format(float(SNR)),
                        fontsize=9,
                        horizontalalignment='right',
-                       bbox={'color': 'k', 'facecolor': 'white'})
+                       bbox={'color': 'w', 'facecolor': 'white'})
 
         # formatting axes
         axlist[0].set_xlim(xlim)
@@ -682,7 +682,7 @@ class CrossCorrelation:
                     s="{} - {} s, SNR = {:.1f}".format(tmin, tmax, SNR),
                     fontsize=9,
                     horizontalalignment='right',
-                    bbox={'color': 'k', 'facecolor': 'white'})
+                    bbox={'color': 'w', 'facecolor': 'white'})
 
             if lastplot:
                 # adding label to signalwindows
@@ -691,7 +691,7 @@ class CrossCorrelation:
                         s="Signal window",
                         horizontalalignment='center',
                         fontsize=8,
-                        bbox={'color': 'k', 'facecolor': 'white'})
+                        bbox={'color': 'w', 'facecolor': 'white'})
 
                 # adding label to noise windows
                 ax.text(x=sum(tnoise) / 2,
@@ -699,7 +699,7 @@ class CrossCorrelation:
                         s="Noise window",
                         horizontalalignment='center',
                         fontsize=8,
-                        bbox={'color': 'k', 'facecolor': 'white'})
+                        bbox={'color': 'w', 'facecolor': 'white'})
 
             # formatting axes
             ax.set_xlim(xlim)
@@ -1293,7 +1293,7 @@ class CrossCorrelation:
         x = (xlim[0] + xlim[1]) / 2.0
         y = ylim[0] + 0.05 * (ylim[1] - ylim[0])
         ax.text(x, y, "Raw FTAN", fontsize=12,
-                bbox={'color': 'k', 'facecolor': 'white', 'lw': 0.5},
+                bbox={'color': 'w', 'facecolor': 'white', 'lw': 0.5},
                 horizontalalignment='center',
                 verticalalignment='center')
         ax.set_xlim(xlim)
@@ -1345,7 +1345,7 @@ class CrossCorrelation:
         x = (xlim[0] + xlim[1]) / 2.0
         y = ylim[0] + 0.05 * (ylim[1] - ylim[0])
         ax.text(x, y, "Clean FTAN", fontsize=12,
-                bbox={'color': 'k', 'facecolor': 'white', 'lw': 0.5},
+                bbox={'color': 'w', 'facecolor': 'white', 'lw': 0.5},
                 horizontalalignment='center',
                 verticalalignment='center')
         # plotting cut-off period
@@ -1885,7 +1885,7 @@ class CrossCorrelationCollection(AttribDict):
             arrowprops = {'arrowstyle': '-', 'relpos': relpos, 'color': color}
 
             plt.annotate(s=s, xy=xyarrow, xytext=xytext, fontsize=9,
-                         color='k', horizontalalignment='right',
+                         color='w', horizontalalignment='right',
                          bbox=bbox, arrowprops=arrowprops)
 
         plt.xlim((0.0, plt.xlim()[1]))
