@@ -47,7 +47,7 @@ Optionally, you may want to install the
 to be able to invert your dispersion maps for a 1-D shear velocity model,
 as these programs take care of the forward modelling.
 
-Here is a simple tutorial to archieve the installation of [those programs] (https://intra.sismo.ipgp.fr/eqcsoftware)
+Here is a simple tutorial to archieve the installation of [those programs](https://intra.sismo.ipgp.fr/eqcsoftware).
 
 How to start
 ------------
@@ -58,6 +58,8 @@ own parameters, and place it in the same folder as the scripts. It is not advise
 to simply modify `tomo_Brazil.cnf`, as any update may revert your changes.
 
 You may then use the scripts in the following order:
+
+- `Obspy fusion.ipynb` is a notebook created by CHRISTIAENS L. that converts SDS type data files into pysismo readable data,
 
 - `crosscorrelation.py` takes seismic waveforms as input in order to calculate 
 and export cross-correlations between pairs of stations,
