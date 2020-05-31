@@ -134,8 +134,8 @@ TECTO_COLORS = {
 # bounding box of (large) global maps and (small) inset maps
 # (min lon, max lon, min lat, max lat in JSON lists)
 
-BBOX_LARGE = [-70, -30, -32, 8]
-BBOX_SMALL = [-65, -35, -29, 1]
+BBOX_LARGE = [3.91, 4.02, 50.4, 50.5]
+BBOX_SMALL = [3.91, 4.02, 50.4, 50.5]
 
 
 
@@ -148,33 +148,33 @@ USE_DATALESSPAZ = false
 USE_STATIONXML = true               
 ; use stationXML files to remove instrument response?
 
-FIRSTDAY = 01/10/2019
+FIRSTDAY = 19/01/2020
 ; first day of cross-correlation (d/m/y)
-LASTDAY = 31/01/2020                 
+LASTDAY = 15/05/2020                 
 ; last day of cross-correlation (d/m/y)
-MINFILL = 0.2                      
+MINFILL = 0.95                  
 ; minimum data fill within day
 
 CROSSCORR_STATIONS_SUBSET = null    
 ; subset of stations (null if all, else JSON list)
-CROSSCORR_TMAX = 2000               
+CROSSCORR_TMAX = 100              
 ; max time window (s) for cross-correlation
 CROSSCORR_SKIPLOCS = []        
 ; locations to skip (JSON list)
 
-PERIODMIN = 1.1                     
+PERIODMIN = 0.1              
 ; bandpass parameters
-PERIODMAX = 60.0
+PERIODMAX = 20.0
 CORNERS = 2
 ZEROPHASE = True
-PERIOD_RESAMPLE = 0.5               
+PERIOD_RESAMPLE = 0.025          
 ; resample period to decimate traces, after band-pass
 
-ONEBIT_NORM = false                 
+ONEBIT_NORM = False                 
 ; one-bit normalization?
-PERIODMIN_EARTHQUAKE = 5.0         
+PERIODMIN_EARTHQUAKE = 0.1       
 ; earthquakes periods band
-PERIODMAX_EARTHQUAKE = 50.0
+PERIODMAX_EARTHQUAKE = 20.0
 
 WINDOW_FREQ = 0.0002                
 ; freq window (Hz) to smooth ampl spectrum
@@ -190,7 +190,11 @@ WINDOW_FREQ = 0.0002
 # - plot spectral SNR, in plot_spectral_SNR()
 # - estimate min spectral SNR, in FTANs()
 
-PERIOD_BANDS = [[1,4], [4, 7], [7, 15], [10, 22], [15, 30], [20, 35]]
+
+PERIOD_BANDS = [[0.07, 0.17], [0.12, 0.28], [0.20, 0.46], [0.33, 0.77], [0.55, 1.29], [0.92, 2.15], [1.54, 3.59], [2.57, 5.99], [4.28, 9.99], [7.14, 16.67]]
+
+#Original
+#[[1,4], [4, 7], [7, 15], [10, 22], [15, 30], [20, 35]]
 # (these bands focus on periods ~5, 10, 15, 20, 25 seconds)
 
 # default parameters to define the signal and noise windows used to
@@ -200,16 +204,20 @@ PERIOD_BANDS = [[1,4], [4, 7], [7, 15], [10, 22], [15, 30], [20, 35]]
 # - the noise window has a fixed size and starts after a fixed trailing
 #   time from the end of the signal window
 
-SIGNAL_WINDOW_VMIN = 1.0
+SIGNAL_WINDOW_VMIN = 0.25
 SIGNAL_WINDOW_VMAX = 4.0
-SIGNAL2NOISE_TRAIL = 500.0
-NOISE_WINDOW_SIZE = 500.0
+SIGNAL2NOISE_TRAIL = 50.0
+NOISE_WINDOW_SIZE = 50.0
 
 # periods and velocities of the FTAN: start, stop and step (JSON lists)
 
-RAWFTAN_PERIODS_STARTSTOPSTEP = [1.0, 45.1, 1.0]
-CLEANFTAN_PERIODS_STARTSTOPSTEP = [3.0, 45.1, 1.0]
-FTAN_VELOCITIES_STARTSTOPSTEP = [2.0, 5.51, 0.01]
+RAWFTAN_PERIODS_STARTSTOPSTEP = [0.1, 6.01, 0.05]
+#[1.0, 45.1, 1.0]
+CLEANFTAN_PERIODS_STARTSTOPSTEP = [0.1, 6.01, 0.05]
+#[3.0, 45.1, 1.0]
+FTAN_VELOCITIES_STARTSTOPSTEP = [0.25, 4.01, 0.01]
+#[0.5, 5.51, 0.01]
+
 
 # default width parameter of the narrow Gaussian bandpass filters
 # applied in the FTAN. The bandpass filters take the form:
@@ -217,8 +225,11 @@ FTAN_VELOCITIES_STARTSTOPSTEP = [2.0, 5.51, 0.01]
 #  exp[-FTAN_ALPHA * ((f-f0)/f0)**2],
 #
 # where f is the frequency and f0 the center frequency of the filter.
+# Higger FTAN means NARROWER Gaussian
 
 FTAN_ALPHA = 20
+
+#origine FTAN_ALPHA = 20
 
 # relative strength of the smoothing term in the penalty function that
 # the dispersion curve seeks to minimize
@@ -229,7 +240,7 @@ STRENGTH_SMOOTHING = 1.0
 # phase of the filtered analytic signal), in the FTAN and dispersion curves?
 # See Bensen et al. (2007) for technical details.
 
-USE_INSTANTANEOUS_FREQ = True
+USE_INSTANTANEOUS_FREQ = False
 
 # if the instantaneous frequency (or period) is used, we need to discard bad
 # values from instantaneous periods. So:
@@ -244,7 +255,7 @@ USE_INSTANTANEOUS_FREQ = True
 #   of each period.
 
 MAX_RELDIFF_INST_NOMINAL_PERIOD = 0.8
-MIN_INST_PERIOD = 1.5
+MIN_INST_PERIOD = 0.075
 HALFWINDOW_MEDIAN_PERIOD = 3
 MAX_RELDIFF_INST_MEDIAN_PERIOD = 0.5
 
@@ -254,31 +265,34 @@ MAX_RELDIFF_INST_MEDIAN_PERIOD = 0.5
 
 # Default parameters related to the velocity selection criteria
 
-MINSPECTSNR = 4             
-; min spectral SNR to retain velocity
-MINSPECTSNR_NOSDEV = 10     
-; min spectral SNR to retain velocity if no std dev
-MAXSDEV = 0.05               
-; max sdt dev (km/s) to retain velocity
+MINSPECTSNR = 1          
+; min spectral SNR to retain velocity #7
+MINSPECTSNR_NOSDEV = 1     
+; min spectral SNR to retain velocity if no std dev #15
+MAXSDEV = 10               
+; max sdt dev (km/s) to retain velocity #0.1
 MINNBTRIMESTER = 1          
-; min nb of trimesters to estimate std dev
-MAXPERIOD_FACTOR = 0.2  
+; min nb of trimesters to estimate std dev #4
+MAXPERIOD_FACTOR = 100  
+#1/12
 ; max period = *MAXPERIOD_FACTOR* * pair distance
 
 # Default internode spacing of grid
 
-LONSTEP = 1
-LATSTEP = 1
-
+LONSTEP = 0.05
+LATSTEP = 0.05
+#1
+#1
 # Default correlation length of the smoothing kernel:
 # S(r,r') = exp[-|r-r'|**2 / (2 * correlation_length**2)]
 
-CORRELATION_LENGTH = 150
+CORRELATION_LENGTH = 1
+#150
 
 # Default strength of the spatial smoothing term (alpha) and the
 # weighted norm penalization term (beta) in the penalty function
 
-ALPHA = 400
+ALPHA = 600
 BETA = 200
 
 # Default parameter in the damping factor of the norm penalization term,
@@ -289,4 +303,7 @@ BETA = 200
 LAMBDA = 0.5 
 #0.3
 
+SCALE =1000
+
+TOL= 0.05
 

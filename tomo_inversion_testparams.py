@@ -66,18 +66,23 @@ import pickle
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import itertools as it
+import numpy as np
 
 # inversion parameters to vary
-PERIODS = [10.0, 15.0]
-GRID_STEPS = [1.0]
-MINPECTSNRS = [7.0]
-CORR_LENGTHS = [50, 150, 250]
-ALPHAS = [200, 400, 600]
+PERIODS = [i for i in np.arange(0.25, 6.25, 0.25)]
+#GRID_STEPS = [0.05]
+LON_STEPS = [0.033]
+LAT_STEPS = [0.05]
+#Rapport 1 sur l'autre 0.65 
+MINPECTSNRS = [3.0]
+CORR_LENGTHS = [1]
+ALPHAS = [400]
 BETAS = [200]
-LAMBDAS = [0.3]
+LAMBDAS = [0.5]
 
 # parsing configuration file to import dirs
 from pysismo.psconfig import FTAN_DIR, TOMO_DIR
+
 
 # selecting dispersion curves
 flist = sorted(glob.glob(os.path.join(FTAN_DIR, 'FTAN*.pickle*')))
@@ -92,6 +97,8 @@ if not res:
 else:
     pickle_files = [flist[int(i)-1] for i in res.split()]
 
+vmaps={} #Dico des cartes
+    
 # loop on pickled curves
 for pickle_file in pickle_files:
     print("\nProcessing dispersion curves of file: " + pickle_file)
@@ -115,13 +122,13 @@ for pickle_file in pickle_files:
 
     # performing tomographic inversions, systematically
     # varying the inversion parameters
-    param_lists = it.product(PERIODS, GRID_STEPS, MINPECTSNRS, CORR_LENGTHS,
+    param_lists = it.product(PERIODS, LON_STEPS, LAT_STEPS, MINPECTSNRS, CORR_LENGTHS,
                              ALPHAS, BETAS, LAMBDAS)
     param_lists = list(param_lists)
-    for period, grid_step, minspectSNR, corr_length, alpha, beta, lambda_ in param_lists:
-        s = ("Period = {} s, grid step = {}, min SNR = {}, corr. length "
+    for period, lon_step, lat_step, minspectSNR, corr_length, alpha, beta, lambda_ in param_lists:
+        s = ("Period = {} s, lon step = {}, lat step = {}, min SNR = {}, corr. length "
              "= {} km, alpha = {}, beta = {}, lambda = {}")
-        print(s.format(period, grid_step, minspectSNR, corr_length, alpha, beta, lambda_))
+        print(s.format(period, lon_step, lat_step, minspectSNR, corr_length, alpha, beta, lambda_))
 
         # Performing the tomographic inversion to produce a velocity map
         # at period = *period* , with parameters given above:
@@ -141,8 +148,8 @@ for pickle_file in pickle_files:
         v = pstomo.VelocityMap(dispersion_curves=curves,
                                period=period,
                                verbose=False,
-                               lonstep=grid_step,
-                               latstep=grid_step,
+                               lonstep=lon_step,
+                               latstep=lat_step,
                                minspectSNR=minspectSNR,
                                correlation_length=corr_length,
                                alpha=alpha,
@@ -158,16 +165,16 @@ for pickle_file in pickle_files:
         # VelocityMap.plot_pathdensity(), VelocityMap.plot_resolution()
         # for a detailed description of the input arguments.
 
-        title = ("Period = {0} s, grid {1} x {1} deg, min SNR = {2}, corr. length "
-                 "= {3} km, alpha = {4}, beta = {5}, lambda = {6} ({7} paths)")
-        title = title.format(period, grid_step, minspectSNR, corr_length,
+        title = ("Period = {0} s, grid {1} x {2} deg, min SNR = {3}, corr. length "
+                 "= {4} km, alpha = {5}, beta = {6}, lambda = {7} ({8} paths)")
+        title = title.format(period, lon_step, lat_step, minspectSNR, corr_length,
                              alpha, beta, lambda_, len(v.paths))
         fig = v.plot(title=title, showplot=False)
 
         # exporting plot to pdf
         pdf.savefig(fig)
         plt.close()
-
+        vmaps[period]=v
     # closing pdf file
     pdf.close()
 
@@ -182,6 +189,26 @@ for pickle_file in pickle_files:
     print("\nMerging pages of pdf...")
     psutils.combine_pdf_pages(pdfname, pagesgroups, verbose=True)
 
-
+    #Export pickle Louis
+    
+    print('Export to pickle')
+    
+    usersuffix = input("\nEnter suffix to append: [none]\n").strip()
+    
+    try:
+        os.makedirs(TOMO_DIR)
+    except:
+        pass
+    basename = os.path.basename(pickle_file).replace('FTAN', '2-pass-tomography')
+    outprefix = os.path.join(TOMO_DIR, os.path.splitext(basename)[0])
+    
+    if usersuffix:
+        outprefix += '_{}'.format(usersuffix)
+    picklename = outprefix + '.pickle'
+    
+    print("\nExporting final velocity maps to file: " + picklename)
+    f = psutils.openandbackup(picklename, 'wb')
+    pickle.dump(vmaps, f, protocol=2)
+    f.close()
 
 

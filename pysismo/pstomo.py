@@ -28,7 +28,7 @@ from .psconfig import (
     SIGNAL_WINDOW_VMIN, SIGNAL_WINDOW_VMAX, SIGNAL2NOISE_TRAIL, NOISE_WINDOW_SIZE,
     MINSPECTSNR, MINSPECTSNR_NOSDEV, MAXSDEV, MINNBTRIMESTER, MAXPERIOD_FACTOR,
     LONSTEP, LATSTEP, CORRELATION_LENGTH, ALPHA, BETA, LAMBDA,
-    FTAN_ALPHA, FTAN_VELOCITIES_STEP, PERIOD_RESAMPLE)
+    FTAN_ALPHA, FTAN_VELOCITIES_STEP, PERIOD_RESAMPLE, SCALE, TOL)
 
 # ========================
 # Constants and parameters
@@ -656,6 +656,8 @@ class VelocityMap:
         alpha = kwargs.get('alpha', ALPHA)
         beta = kwargs.get('beta', BETA)
         lambda_ = kwargs.get('lambda_', LAMBDA)
+        scale = kwargs.get('scale', SCALE) #Rounding grid box
+        tol = kwargs.get('scale', TOL) #Marge grid box
 
         if verbose:
             print("Velocities selection criteria:")
@@ -762,10 +764,11 @@ class VelocityMap:
         # sure that no path will fall outside)
         lons1, lats1 = list(zip(*[c.station1.coord for c in self.disp_curves]))
         lons2, lats2 = list(zip(*[c.station2.coord for c in self.disp_curves]))
-        tol = 0.5
-        lonmin = np.floor(min(lons1 + lons2) - tol)
+        
+     
+        lonmin = np.floor((min(lons1 + lons2) - tol)*scale)/scale
         nlon = np.ceil((max(lons1 + lons2) + tol - lonmin) / lonstep) + 1
-        latmin = np.floor(min(lats1 + lats2) - tol)
+        latmin = np.floor((min(lats1 + lats2) - tol)*scale)/scale
         nlat = np.ceil((max(lats1 + lats2) + tol - latmin) / latstep) + 1
         self.grid = Grid(lonmin, lonstep, nlon, latmin, latstep, nlat)
 

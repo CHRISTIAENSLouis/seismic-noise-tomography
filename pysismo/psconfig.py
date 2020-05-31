@@ -242,3 +242,7 @@ BETA = config.getfloat('tomography', 'BETA')
 # With a value of 0.15, penalization becomes strong when path density < ~20
 # With a value of 0.30, penalization becomes strong when path density < ~10
 LAMBDA = config.getfloat('tomography', 'LAMBDA')
+
+SCALE = config.getfloat('tomography', 'SCALE')
+
+TOL = config.getfloat('tomography', 'TOL')
