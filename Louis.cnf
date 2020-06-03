@@ -190,12 +190,10 @@ WINDOW_FREQ = 0.0002
 # - plot spectral SNR, in plot_spectral_SNR()
 # - estimate min spectral SNR, in FTANs()
 
+#Pour 1->10
 
 PERIOD_BANDS = [[0.07, 0.17], [0.12, 0.28], [0.20, 0.46], [0.33, 0.77], [0.55, 1.29], [0.92, 2.15], [1.54, 3.59], [2.57, 5.99], [4.28, 9.99], [7.14, 16.67]]
 
-#Original
-#[[1,4], [4, 7], [7, 15], [10, 22], [15, 30], [20, 35]]
-# (these bands focus on periods ~5, 10, 15, 20, 25 seconds)
 
 # default parameters to define the signal and noise windows used to
 # estimate the SNR:
@@ -212,11 +210,11 @@ NOISE_WINDOW_SIZE = 50.0
 # periods and velocities of the FTAN: start, stop and step (JSON lists)
 
 RAWFTAN_PERIODS_STARTSTOPSTEP = [0.1, 6.01, 0.05]
-#[1.0, 45.1, 1.0]
+
 CLEANFTAN_PERIODS_STARTSTOPSTEP = [0.1, 6.01, 0.05]
-#[3.0, 45.1, 1.0]
+
 FTAN_VELOCITIES_STARTSTOPSTEP = [0.25, 4.01, 0.01]
-#[0.5, 5.51, 0.01]
+
 
 
 # default width parameter of the narrow Gaussian bandpass filters
@@ -229,7 +227,6 @@ FTAN_VELOCITIES_STARTSTOPSTEP = [0.25, 4.01, 0.01]
 
 FTAN_ALPHA = 20
 
-#origine FTAN_ALPHA = 20
 
 # relative strength of the smoothing term in the penalty function that
 # the dispersion curve seeks to minimize
@@ -292,7 +289,7 @@ CORRELATION_LENGTH = 1
 # Default strength of the spatial smoothing term (alpha) and the
 # weighted norm penalization term (beta) in the penalty function
 
-ALPHA = 600
+ALPHA = 400
 BETA = 200
 
 # Default parameter in the damping factor of the norm penalization term,

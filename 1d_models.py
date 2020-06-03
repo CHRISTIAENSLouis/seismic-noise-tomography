@@ -102,10 +102,8 @@ from pysismo.psconfig import TOMO_DIR, DEPTHMODELS_DIR
 # nodes of the dispersion maps
 # ==================================================================
 
-LOCATIONS = {'Bruxelles': (4.16, 50.83),
-             'Mons': (3.98, 50.5),
-             'Liege': (5.51, 50.51)
-             }
+LOCATIONS = {'Centrale': (3.961, 50.458)}
+
 NB_NEIGHBORS = 1
 
 print("Select location(s) on which estimate depth models [all]:")
@@ -120,29 +118,29 @@ if res:
 # rho/Vs (of sediments, crust and mantle) and Vs of sediments and mantle
 # ======================================================================
 
-DEPTHS = np.arange(50)  # depths over which the model will be plotted
+DEPTHS = np.arange(10)  # depths over which the model will be plotted
 
 # sediments: default
-VS_SEDIMENTS = 2.7
-RATIO_VP_VS_SEDIMENTS = 1.815  # Vp = 4.9 km/s,    Snoke & James 1997, reported
-RATIO_RHO_VS_SEDIMENTS = 0.93  # rho = 2.5 g/cm3   by Julia et al. 2008
+VS_SEDIMENTS = 1.0
+RATIO_VP_VS_SEDIMENTS = 1.8  # Vp = 4.9 km/s,    Snoke & James 1997, reported
+RATIO_RHO_VS_SEDIMENTS = 1.4  # rho = 2.5 g/cm3   by Julia et al. 2008
 # sediments: location-specific (where available)
 LOCAL_VS_SEDIMENTS = {}
 LOCAL_RATIO_VP_VS_SEDIMENTS = {}
 LOCAL_RATIO_RHO_VS_SEDIMENTS = {}
 # crust: defaut
-NB_CRUST_LAYERS = 2
-RATIO_VP_VS_CRUST = 1.745  # Chulick et al., 2013 (avg South America)
-RATIO_RHO_VS_CRUST = 0.78  # avg rho/Vs for Vs=3.4-4, given the relationship rho(Vp)
+NB_CRUST_LAYERS = 6
+RATIO_VP_VS_CRUST = 1.73  # Chulick et al., 2013 (avg South America)
+RATIO_RHO_VS_CRUST = 1.11  # avg rho/Vs for Vs=3.4-4, given the relationship rho(Vp)
                            # of Christensen & Mooney 1995 at 20 km and the Vp/Vs chosen
 # crust: location-specific (where available)
 LOCAL_NB_CRUST_LAYERS = {}
 LOCAL_RATIO_VP_VS_CRUST = {}
 LOCAL_RATIO_RHO_VS_CRUST = {}
 # mantle: default
-VS_MANTLE = 4.5              # Chulick et al., 2013 (avg South America)
-RATIO_VP_VS_MANTLE = 1.778   # Vp = 8 km/s, Chulick et al. 2013 (avg South America)
-RATIO_RHO_VS_MANTLE = 0.744  # rho = 3.35 g/cm3
+VS_MANTLE = 4.0     # Chulick et al., 2013 (avg South America)
+RATIO_VP_VS_MANTLE = 1.70   # Vp = 8 km/s, Chulick et al. 2013 (avg South America)
+RATIO_RHO_VS_MANTLE = 0.7  # rho = 3.35 g/cm3
 # mante: location-specific (where available)
 LOCAL_VS_MANTLE = {}
 LOCAL_RATIO_VP_VS_MANTLE = {}
@@ -154,22 +152,24 @@ LOCAL_RATIO_RHO_VS_MANTLE = {}
 # ==================================================================
 
 # default bounds
-DZ_SEDIMENTS_BOUNDS = (0.0, 10.0)
-VS_CRUST_BOUNDS = (3.2, 4.0)
-DZ_CRUST_BOUNDS = (10.0, 30.0)
-MOHO_DEPTH_BOUNDS = (35.0, 50.0)
+DZ_SEDIMENTS_BOUNDS = (0.3, 0.4)
+VS_CRUST_BOUNDS = (1.1, 3.9)
+DZ_CRUST_BOUNDS = (0.4, 6.6)
+MOHO_DEPTH_BOUNDS = (6.0, 7.0)
 # location-specific bounds (if available)
 # sediments thickness: 2 km around (rounded) value of Laske & Masters
-LOCAL_DZ_SEDIMENTS_BOUNDS = {'Bruxelles': (3.0, 7.0),      # Laske & Masters: 4.5 4.5 5 5.2 km
-                             'Mons': (0.0, 2.0),  # (neighbours) 0.1 0.1 0.25 0.4 km
-                             'Liege': (0.0, 2.0)}                 # 0.01 0.01 0.1 0.1 km
+#LOCAL_DZ_SEDIMENTS_BOUNDS = {'Bruxelles': (3.0, 7.0),      # Laske & Masters: 4.5 4.5 5 5.2 km
+#                             'Mons': (0.0, 2.0),  # (neighbours) 0.1 0.1 0.25 0.4 km
+#                             'Liege': (0.0, 2.0)}                 # 0.01 0.01 0.1 0.1 km
+LOCAL_DZ_SEDIMENTS_BOUNDS = {}                
 LOCAL_VS_CRUST_BOUNDS = {}
 LOCAL_DZ_CRUST_BOUNDS = {}
 # Moho depth: 5 km around (rounded) value of Assumpcao et al.
-LOCAL_MOHO_DEPTH_BOUNDS = {'Bruxelles': (38.0, 48.0),  # Assumpcao et al.: 43.4 km
-                           'Mons': (35.0, 45.0),            # 39.7 km
-                           'Liege': (33.0, 43.0)               # 38 km
-                           }   # from Assumpcao et al.
+#LOCAL_MOHO_DEPTH_BOUNDS = {'Bruxelles': (38.0, 48.0),  # Assumpcao et al.: 43.4 km
+#                           'Mons': (35.0, 45.0),            # 39.7 km
+#                           'Liege': (33.0, 43.0)               # 38 km
+#                           }   # from Assumpcao et al.
+LOCAL_MOHO_DEPTH_BOUNDS = {}
 # min Vs increment (set to 0 to force Vs increase with depth)
 VS_MIN_INCREMENT = 0.0
 
@@ -179,16 +179,16 @@ VS_MIN_INCREMENT = 0.0
 # =============================================================
 
 # crustal Vs
-VS_SAMPLINGSTEP = 0.02
-VS_MAXJUMP = 0.06
+VS_SAMPLINGSTEP = 0.1
+VS_MAXJUMP = 0.2
 # thickness of sediment layer
-DZ_SEDIMENTS_SAMPLINGSTEP = 0.2
-DZ_SEDIMENTS_MAXJUMP = 0.5
+DZ_SEDIMENTS_SAMPLINGSTEP = 0.01
+DZ_SEDIMENTS_MAXJUMP = 0.05
 # thickness of crustal layers
-DZ_CRUSTLAYER_SAMPLINGSTEP = 1.0
-DZ_CRUSTLAYER_MAXJUMP = 2.0
+DZ_CRUSTLAYER_SAMPLINGSTEP = 0.1
+DZ_CRUSTLAYER_MAXJUMP = 0.3
 # nb of samples
-NB_SAMPLES = 50000
+NB_SAMPLES = 2000
 res = input('Number of samples of MC exploration? [{}]\n'.format(NB_SAMPLES))
 NB_SAMPLES = int(res) if res.strip() else NB_SAMPLES
 # nb of burnt in samples
@@ -206,9 +206,9 @@ usersuffix = input("\nEnter suffix to append: [none]\n").strip()
 # =====================================================================
 
 print("Loading velocity maps")
-s = ('2-pass-tomography_2019-2020_xmlresponse_1_1_1.pickle')
+s = ('2-pass-tomography_2020-2020_xmlresponse_100_7_1.pickle')
 PICKLE_FILE_SHORT_PERIODS = os.path.join(TOMO_DIR, s)
-s = ('2-pass-tomography_2019-2020_xmlresponse_1_1_1.pickle')
+s = ('2-pass-tomography_2020-2020_xmlresponse_100_7_1.pickle')
 PICKLE_FILE_LONG_PERIODS = os.path.join(TOMO_DIR, s)
 
 with open(PICKLE_FILE_SHORT_PERIODS, 'rb') as f:
@@ -216,7 +216,7 @@ with open(PICKLE_FILE_SHORT_PERIODS, 'rb') as f:
 with open(PICKLE_FILE_LONG_PERIODS, 'rb') as f:
     VMAPS_LONG = pickle.load(f)
 print(VMAPS_LONG)
-print(VMAPS_SHORT)
+#print(VMAPS_SHORT)
 #Problème 1
 #PERIODVMAPS = {T: (VMAPS_SHORT[T] if T <= 10 else VMAPS_LONG[T]) for T in range(6, 26)}
 #ADD BY LOUIS
@@ -411,7 +411,7 @@ for locname, (lon, lat) in sorted(LOCATIONS.items()):
     dzcrustlayers = []
     for i in range(nb_crust_layers):
         vscrustlayer = psmcsampling.Parameter(
-            name='Vs of crustal layer #{}'.format(i + 1),
+            name='Vs Couche 2, Strate #{}'.format(i + 1),
             minval=vs_crust_bounds[0],
             maxval=vs_crust_bounds[1],
             step=VS_SAMPLINGSTEP,
@@ -421,7 +421,7 @@ for locname, (lon, lat) in sorted(LOCATIONS.items()):
         vscrustlayers.append(vscrustlayer)
 
         dzcrustlayer = psmcsampling.Parameter(
-            name='Thickness of crustal layer #{}'.format(i + 1),
+            name='Epaisseur Couche 2, Strate #{}'.format(i + 1),
             minval=dz_crust_bounds[0],
             maxval=dz_crust_bounds[1],
             step=DZ_CRUSTLAYER_SAMPLINGSTEP,
@@ -430,7 +430,7 @@ for locname, (lon, lat) in sorted(LOCATIONS.items()):
             nmaxsample=NB_SAMPLES)
         dzcrustlayers.append(dzcrustlayer)
 
-    dzsedlayer = psmcsampling.Parameter(name='Thicknes of sediment layer',
+    dzsedlayer = psmcsampling.Parameter(name='Epaisseur Couche 1',
                                         minval=dz_sediments_bounds[0],
                                         maxval=dz_sediments_bounds[1],
                                         step=DZ_SEDIMENTS_SAMPLINGSTEP,
@@ -667,9 +667,9 @@ for locname, (lon, lat) in sorted(LOCATIONS.items()):
         ax = fig.add_subplot(nrows, ncols, 2 * ncols + 1 + icrustlayer)
         zbase = dzsedlayer + sum(dzcrustlayers[:icrustlayer])
         if icrustlayer < nb_crust_layers:
-            xlabel = 'Depth of base of crustal layer #{}'.format(icrustlayer)
+            xlabel = 'Pronfondeur base de la Couche 2 #{}'.format(icrustlayer)
         else:
-            xlabel = 'Moho depth'
+            xlabel = 'Profondeur Couche 3'
         zbase.hist(ax, nburnt=NB_BURN, xlabel=xlabel)
 
     if os.path.exists(outfile):
@@ -677,3 +677,4 @@ for locname, (lon, lat) in sorted(LOCATIONS.items()):
         shutil.copy(outfile, outfile + '~')
     fig.savefig(outfile, dpi=300)
     fig.show()
+
